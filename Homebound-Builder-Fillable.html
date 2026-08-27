@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homebound Statement Builder — @bettercharting</title>
+<style>
+  :root {
+    --blue: #123b62;
+    --blue-light: #eef7ff;
+    --blue-border: #2f80c0;
+    --grey: #526070;
+    --green-bg: #eaf7ef;
+    --green-border: #acd8bb;
+    --orange-bg: #fff8ed;
+    --orange-border: #f1d1a6;
+    --orange-left: #d9822b;
+    --green-left: #2f8f4e;
+    --bg: #f0f4f8;
+    --white: #fff;
+    --border: #d8e2ec;
+    --row-alt: #f7fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: #172033;
+    line-height: 1.5;
+    padding: 20px;
+    -webkit-text-size-adjust: 100%;
+  }
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(15,23,42,.12);
+    overflow: hidden;
+  }
+  .header {
+    background: var(--blue);
+    color: var(--white);
+    padding: 20px 28px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .body { padding: 24px 28px 32px; }
+
+  .reminder {
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-left: 4px solid var(--orange-left);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #7a5c2a;
+    margin-bottom: 20px;
+  }
+  .reminder b { color: var(--orange-left); }
+
+  .template-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .template-btn {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey);
+    transition: all .15s;
+    text-align: left;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .template-btn:hover { border-color: var(--blue-border); }
+  .template-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-light);
+    color: var(--blue);
+  }
+  .template-btn .t-label { font-size: 15px; font-weight: 700; display: block; margin-bottom: 4px; }
+  .template-btn .t-desc { font-size: 11px; font-weight: 400; color: var(--grey); }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 5px;
+  }
+  .field-group label .hint {
+    font-weight: 400;
+    color: var(--grey);
+    font-size: 11px;
+  }
+  .field-group input,
+  .field-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #172033;
+    background: var(--white);
+    transition: border-color .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field-group input:focus,
+  .field-group select:focus {
+    outline: none;
+    border-color: var(--blue-border);
+    box-shadow: 0 0 0 3px rgba(47,128,192,.12);
+  }
+  .field-group .hint-below {
+    font-size: 11px;
+    color: var(--grey);
+    margin-top: 4px;
+  }
+
+  .output-section { margin-top: 24px; }
+  .output-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .output-box {
+    width: 100%;
+    min-height: 140px;
+    padding: 16px 20px;
+    border: 2px solid var(--blue-border);
+    border-radius: 8px;
+    font-size: 16px;
+    line-height: 1.65;
+    font-family: inherit;
+    color: #172033;
+    background: #f4f8fc;
+    resize: vertical;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .output-box::placeholder { color: #aaa; font-style: italic; }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .copy-btn:hover { background: #0d2d4d; }
+  .copy-btn:active { transform: scale(.97); }
+  .copy-btn.copied { background: #2f8f4e; }
+  .copy-btn .icon { font-size: 16px; }
+  .select-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--white);
+    color: var(--blue);
+    border: 2px solid var(--blue-border);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .select-btn:hover { background: var(--blue-light); }
+
+  .checklist {
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-left: 4px solid var(--orange-left);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .checklist h3 {
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .checklist label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .checklist input[type="checkbox"] {
+    margin-top: 2px;
+    accent-color: var(--orange-left);
+    width: 18px;
+    height: 18px;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #a0b0c0;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+
+  #template-b-fields { display: none; }
+  .template-b-only { display: none; }
+  .template-a-only { display: block; }
+
+  @media (max-width: 600px) {
+    .template-selector { flex-direction: column; }
+    body { padding: 10px; }
+    .body { padding: 16px 18px 24px; }
+    .btn-row { flex-direction: column; }
+    .copy-btn, .select-btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Homebound Statement Builder</h1>
+    <div class="subtitle">Fill in the blanks, copy your statement, paste into your chart. @bettercharting</div>
+  </div>
+  <div class="body">
+
+    <div class="reminder">
+      <b>Safety:</b> Use only findings that were assessed, observed, reported, and documented for this patient. Delete any part that does not apply.
+    </div>
+
+    <div class="template-selector">
+      <button class="template-btn active" id="btn-a" onclick="selectTemplate('a')">
+        <span class="t-label">Template A</span>
+        <span class="t-desc">Patient needs help/equipment to leave home (most patients)</span>
+      </button>
+      <button class="template-btn" id="btn-b" onclick="selectTemplate('b')">
+        <span class="t-label">Template B</span>
+        <span class="t-desc">Leaving home is medically contraindicated (specific medical risk)</span>
+      </button>
+    </div>
+
+    <div class="field-group">
+      <label>Condition <span class="hint">— CHF, COPD, wound, dementia, CVA weakness, post-op, infection, deconditioning, diabetes complication</span></label>
+      <input type="text" id="f-condition" placeholder="e.g., CHF exacerbation" oninput="updateOutput()">
+    </div>
+
+    <div class="field-group">
+      <label>Limitation <span class="hint">— what the patient cannot safely/routinely do</span></label>
+      <input type="text" id="f-limitation" placeholder="e.g., decreased endurance and shortness of breath with minimal exertion" oninput="updateOutput()">
+    </div>
+
+    <div class="template-a-only" id="ta-needs">
+      <div class="field-group">
+        <label>Needs to leave <span class="hint">— walker, wheelchair, cane, hands-on assist, caregiver help, medical transport</span></label>
+        <input type="text" id="f-needs" placeholder="e.g., walker use and assistance of another person" oninput="updateOutput()">
+      </div>
+      <div class="field-group">
+        <label>Why unsafe <span class="hint">— what could go wrong without support</span></label>
+        <input type="text" id="f-why" placeholder="e.g., dyspnea, weakness, and fall risk" oninput="updateOutput()">
+      </div>
+    </div>
+
+    <div class="template-b-only" id="tb-risk">
+      <div class="field-group">
+        <label>Medical risk + facts <span class="hint">— specific medical risk created by leaving home</span></label>
+        <input type="text" id="f-risk" placeholder="e.g., travel requires transfers that place pressure on the wound" oninput="updateOutput()">
+      </div>
+      <div class="field-group">
+        <label>Consequence or restriction <span class="hint">— what leaving would cause or violate</span></label>
+        <input type="text" id="f-consequence" placeholder="e.g., worsening wound status" oninput="updateOutput()">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Taxing proof <span class="hint">— what happens + help needed + rest/recovery required</span></label>
+      <input type="text" id="f-taxing" placeholder="e.g., SOB after walking 10–15 feet despite O2, seated rest breaks, increased fatigue" oninput="updateOutput()">
+    </div>
+
+    <div class="field-group">
+      <label>Skilled need <span class="hint">— wound care, cardiopulmonary assessment, med teaching, IV care, etc.</span></label>
+      <input type="text" id="f-skilled" placeholder="e.g., cardiopulmonary assessment, medication teaching, and symptom monitoring" oninput="updateOutput()">
+      <div class="hint-below">Discipline: <select id="f-discipline" onchange="updateOutput()">
+        <option value="nursing">nursing</option>
+        <option value="therapy">therapy</option>
+        <option value="nursing/therapy">nursing/therapy</option>
+      </select></div>
+    </div>
+
+    <div class="output-section">
+      <label class="output-label" for="output">Your Homebound Statement:</label>
+      <textarea class="output-box" id="output" readonly placeholder="Fill in the fields above to build your statement..."></textarea>
+      <div class="btn-row">
+        <button class="copy-btn" id="copyBtn" onclick="copyOutput()">
+          <span class="icon">📋</span>
+          <span id="copyText">Copy Statement</span>
+        </button>
+        <button class="select-btn" id="selectBtn" onclick="selectOutput()">
+          <span>📑 Select All Text</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="checklist">
+      <h3>Before You Sign — 5-Point Check</h3>
+      <label><input type="checkbox"> Names the <b>condition/illness/injury</b></label><br>
+      <label><input type="checkbox"> Describes the <b>functional limitation</b></label><br>
+      <label><input type="checkbox"> Clearly uses <b>Template A or B</b></label><br>
+      <label><input type="checkbox"> Shows patient is <b>normally unable to leave home</b> and leaving requires <b>considerable/taxing effort</b></label><br>
+      <label><input type="checkbox"> Includes <b>patient-specific evidence</b> and <b>skilled nursing/therapy need</b></label>
+    </div>
+
+    <div class="footer">
+      © 2026 Katie Escobar, RN. All rights reserved. Single-user license only. @bettercharting
+    </div>
+  </div>
+</div>
+
+<script>
+  var currentTemplate = 'a';
+
+  function selectTemplate(t) {
+    currentTemplate = t;
+    var btnA = document.getElementById('btn-a');
+    var btnB = document.getElementById('btn-b');
+    var taFields = document.getElementById('ta-needs');
+    var tbFields = document.getElementById('tb-risk');
+
+    if (t === 'a') {
+      btnA.classList.add('active');
+      btnB.classList.remove('active');
+      taFields.style.display = 'block';
+      tbFields.style.display = 'none';
+    } else {
+      btnB.classList.add('active');
+      btnA.classList.remove('active');
+      taFields.style.display = 'none';
+      tbFields.style.display = 'block';
+    }
+    updateOutput();
+  }
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function updateOutput() {
+    var condition = val('f-condition');
+    var limitation = val('f-limitation');
+    var taxing = val('f-taxing');
+    var skilled = val('f-skilled');
+    var discipline = val('f-discipline');
+    var output = document.getElementById('output');
+
+    if (!condition && !limitation && !taxing && !skilled) {
+      output.value = '';
+      return;
+    }
+
+    var text;
+    if (currentTemplate === 'a') {
+      var needs = val('f-needs');
+      var why = val('f-why');
+      text = 'Patient has ' + (condition || '[CONDITION]') + ' resulting in ' + (limitation || '[LIMITATION]') + '. Because of this condition, the patient requires ' + (needs || '[NEEDS TO LEAVE]') + ' to leave home due to ' + (why || '[WHY UNSAFE]') + '. The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING PROOF]') + '. The patient requires skilled ' + discipline + ' for ' + (skilled || '[SKILLED NEED]') + '.';
+    } else {
+      var risk = val('f-risk');
+      var consequence = val('f-consequence');
+      text = 'Patient has ' + (condition || '[CONDITION]') + ' resulting in ' + (limitation || '[LIMITATION]') + '. Leaving home is medically contraindicated because ' + (risk || '[MEDICAL RISK + FACTS]') + '. The patient is normally unable to leave home without ' + (consequence || '[CONSEQUENCE OR RESTRICTION]') + ', and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING PROOF]') + '. The patient requires skilled ' + discipline + ' for ' + (skilled || '[SKILLED NEED]') + '.';
+    }
+
+    output.value = text;
+  }
+
+  function selectOutput() {
+    var output = document.getElementById('output');
+    output.focus();
+    output.select();
+    try { output.setSelectionRange(0, output.value.length); } catch(e) {}
+  }
+
+  function copyOutput() {
+    var output = document.getElementById('output');
+    var text = output.value;
+
+    if (!text) {
+      updateOutput();
+      text = output.value;
+    }
+    if (!text) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        showCopied();
+      }).catch(function() {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    selectOutput();
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { ta.setSelectionRange(0, ta.value.length); } catch(e) {}
+    try {
+      document.execCommand('copy');
+      showCopied();
+    } catch (e) {
+      selectOutput();
+      alert('Copy button did not work. The text is now selected — long-press and choose Copy.');
+    }
+    document.body.removeChild(ta);
+  }
+
+  function showCopied() {
+    var btn = document.getElementById('copyBtn');
+    var text = document.getElementById('copyText');
+    btn.classList.add('copied');
+    text.textContent = 'Copied!';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      text.textContent = 'Copy Statement';
+    }, 2000);
+  }
+</script>
+</body>
+</html>
