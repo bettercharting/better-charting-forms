@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC Narrative Builder — @bettercharting</title>
+<style>
+  :root {
+    --blue: #123b62; --blue-light: #eef7ff; --blue-border: #2f80c0;
+    --grey: #526070; --green-left: #2f8f4e;
+    --orange-bg: #fff8ed; --orange-border: #f1d1a6; --orange-left: #d9822b;
+    --bg: #f0f4f8; --white: #fff; --border: #d8e2ec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, Helvetica, sans-serif;
+    background: var(--bg); color: #172033; line-height: 1.5; padding: 20px;
+  }
+  .container { max-width: 820px; margin: 0 auto; background: var(--white); border-radius: 12px; box-shadow: 0 4px 24px rgba(15,23,42,.12); overflow: hidden; }
+  .header { background: var(--blue); color: var(--white); padding: 20px 28px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .body { padding: 24px 28px 32px; }
+
+  .reminder {
+    background: var(--orange-bg); border: 1px solid var(--orange-border);
+    border-left: 4px solid var(--orange-left); border-radius: 8px;
+    padding: 10px 14px; font-size: 12px; color: #7a5c2a; margin-bottom: 20px;
+  }
+  .reminder b { color: var(--orange-left); }
+
+  .section-title {
+    font-size: 14px; font-weight: 700; color: var(--blue);
+    margin: 20px 0 10px; padding-bottom: 4px;
+    border-bottom: 2px solid var(--blue-light);
+  }
+  .section-title .sbar { font-size: 11px; font-weight: 400; color: var(--grey); margin-left: 8px; }
+
+  .field-group { margin-bottom: 14px; }
+  .field-group label { display: block; font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 5px; }
+  .field-group label .hint { font-weight: 400; color: var(--grey); font-size: 11px; }
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%; padding: 8px 12px; border: 1.5px solid var(--border);
+    border-radius: 6px; font-size: 14px; font-family: inherit; color: #172033;
+    background: var(--white); transition: border-color .15s;
+  }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    outline: none; border-color: var(--blue-border); box-shadow: 0 0 0 3px rgba(47,128,192,.12);
+  }
+  .field-group .hint-below { font-size: 11px; color: var(--grey); margin-top: 4px; }
+
+  /* Med education toggle */
+  .med-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  .med-toggle-btn {
+    flex: 1; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px;
+    background: var(--white); cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--grey); transition: all .15s; text-align: left;
+  }
+  .med-toggle-btn:hover { border-color: var(--blue-border); }
+  .med-toggle-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .med-toggle-btn .mt-label { font-size: 13px; font-weight: 700; display: block; }
+  .med-toggle-btn .mt-desc { font-size: 10px; font-weight: 400; color: var(--grey); }
+
+  .med-fields { display: none; }
+  .med-fields.active { display: block; }
+
+  .output-section { margin-top: 24px; }
+  .output-box {
+    background: #f4f8fc; border: 2px solid var(--blue-border); border-radius: 8px;
+    padding: 16px 20px; font-size: 14px; line-height: 1.65; min-height: 120px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .output-box .placeholder { color: #bbb; font-style: italic; }
+  .copy-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue); color: var(--white); border: none; border-radius: 8px;
+    padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px;
+    transition: background .15s;
+  }
+  .copy-btn:hover { background: #0d2d4d; }
+  .copy-btn:active { transform: scale(.97); }
+  .copy-btn.copied { background: var(--green-left); }
+  .copy-btn .icon { font-size: 16px; }
+
+  .footer { text-align: center; font-size: 11px; color: #a0b0c0; padding: 16px 0 0; border-top: 1px solid var(--border); margin-top: 24px; }
+
+  @media (max-width: 600px) {
+    .med-toggle { flex-direction: column; }
+    body { padding: 10px; } .body { padding: 16px 18px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>SOC Narrative Builder</h1>
+    <div class="subtitle">Fill in the blanks, copy your narrative, paste into your chart. @bettercharting</div>
+  </div>
+  <div class="body">
+
+    <div class="reminder">
+      <b>How to use:</b> Fill in each field. The narrative builds itself at the bottom. Hit "Copy Narrative" and paste straight into your EMR. Edit the copied text as needed — this is a starting point, not a final note. Always review before signing.
+    </div>
+
+    <!-- Section 1: Advance Care Plan Opening -->
+    <div class="section-title">Advance Care Plan <span class="sbar">— required opening paragraph</span></div>
+
+    <div class="field-group">
+      <label>Representative <span class="hint">— who was present for the care plan (spouse, daughter, son, caregiver, etc.)</span></label>
+      <input type="text" id="rep-name" placeholder="e.g., spouse / daughter / caregiver" oninput="updateOutput()">
+    </div>
+
+    <div class="field-group">
+      <label>Pronoun <span class="hint">— his / her / their</span></label>
+      <select id="pronoun" onchange="updateOutput()">
+        <option value="their">their</option>
+        <option value="his">his</option>
+        <option value="her">her</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label>Patient/caregiver goal <span class="hint">— what does the patient want to achieve?</span></label>
+      <input type="text" id="goal" placeholder="e.g., remain safely at home, return to prior level of function, manage medications independently" oninput="updateOutput()">
+    </div>
+
+    <!-- Med education toggle -->
+    <div class="med-toggle">
+      <button class="med-toggle-btn active" id="btn-taught" onclick="selectMedMode('taught')">
+        <span class="mt-label">Teaching provided</span>
+        <span class="mt-desc">Patient/caregiver was educated on high-risk med(s) and side effects</span>
+      </button>
+      <button class="med-toggle-btn" id="btn-knowledgeable" onclick="selectMedMode('knowledgeable')">
+        <span class="mt-label">Already knowledgeable</span>
+        <span class="mt-desc">Patient/caregiver is 100% knowledgeable with full med regimen</span>
+      </button>
+    </div>
+
+    <!-- Taught fields -->
+    <div class="med-fields active" id="med-taught">
+      <div class="field-group">
+        <label>Who was taught <span class="hint">— patient, caregiver (name/relationship), or both</span></label>
+        <input type="text" id="taught-who" placeholder="e.g., patient and daughter" oninput="updateOutput()">
+      </div>
+      <div class="field-group">
+        <label>High-risk med(s) <span class="hint">— anticoagulants, insulin, opioids, antibiotics, etc.</span></label>
+        <input type="text" id="taught-med" placeholder="e.g., Warfarin and Insulin" oninput="updateOutput()">
+      </div>
+      <div class="field-group">
+        <label>Side effects taught <span class="hint">— what side effects did you teach?</span></label>
+        <input type="text" id="taught-sides" placeholder="e.g., bleeding precautions and hypoglycemia signs" oninput="updateOutput()">
+      </div>
+    </div>
+
+    <!-- Knowledgeable fields -->
+    <div class="med-fields" id="med-knowledgeable">
+      <div class="field-group">
+        <label>Who is knowledgeable <span class="hint">— patient, caregiver (name/relationship), or both</span></label>
+        <input type="text" id="know-who" placeholder="e.g., patient and daughter" oninput="updateOutput()">
+      </div>
+      <div class="field-group">
+        <label>High-risk med(s) <span class="hint">— list the high-risk meds they demonstrated knowledge of</span></label>
+        <input type="text" id="know-med" placeholder="e.g., Warfarin and Insulin" oninput="updateOutput()">
+      </div>
+    </div>
+
+    <!-- Section 2: Situation -->
+    <div class="section-title">Situation <span class="sbar">— where, who, present</span></div>
+    <div class="field-group">
+      <label>Setting & who was present <span class="hint">— home, SNF, ALF, etc. and who was there</span></label>
+      <textarea id="situation" rows="2" placeholder="e.g., Home visit conducted at patient's home. Patient's daughter and home health aide present." oninput="updateOutput()"></textarea>
+    </div>
+
+    <!-- Section 3: Background -->
+    <div class="section-title">Background <span class="sbar">— hospitalization, discharge, events</span></div>
+    <div class="field-group">
+      <label>Discharge date</label>
+      <input type="text" id="dc-date" placeholder="e.g., 8/15/26" oninput="updateOutput()">
+    </div>
+    <div class="field-group">
+      <label>Length of stay <span class="hint">— how many days in hospital</span></label>
+      <input type="text" id="los" placeholder="e.g., 5 days" oninput="updateOutput()">
+    </div>
+    <div class="field-group">
+      <label>Reason for admission <span class="hint">— brief history of why they were hospitalized</span></label>
+      <textarea id="admit-reason" rows="2" placeholder="e.g., admitted for CHF exacerbation with worsening SOB and lower extremity edema" oninput="updateOutput()"></textarea>
+    </div>
+    <div class="field-group">
+      <label>Significant inpatient events <span class="hint">— procedures, complications, changes during hospital stay</span></label>
+      <textarea id="inpatient-events" rows="2" placeholder="e.g., required IV diuretics, had PICC line placed for IV antibiotics, received 2 units PRBC" oninput="updateOutput()"></textarea>
+    </div>
+
+    <!-- Section 4: Pertinent History -->
+    <div class="section-title">Pertinent History <span class="sbar">— how it influences current situation</span></div>
+    <div class="field-group">
+      <label>Pertinent history <span class="hint">— PMH/PSH and how it currently affects the patient</span></label>
+      <textarea id="pertinent-hx" rows="2" placeholder="e.g., History of CHF, diabetes, and prior CVA with residual left-sided weakness. Currently non-weight-bearing on left leg due to diabetic foot wound, which limits mobility and increases fall risk." oninput="updateOutput()"></textarea>
+    </div>
+
+    <!-- Section 5: Assessment Outliers -->
+    <div class="section-title">Assessment <span class="sbar">— outliers and notable findings</span></div>
+    <div class="field-group">
+      <label>Assessment outliers <span class="hint">— abnormal findings, HOH, blind, SOB, edema, wound, pain, abnormal vitals, functional limits</span></label>
+      <textarea id="assessment" rows="3" placeholder="e.g., Vital signs: BP 148/92, HR 88, RR 20, SpO2 92% on room air, Temp 98.6, 82% of pre-visit weight. Patient is HOH, requires caregiver to ambulate safely with walker. Wound: 2.5cm x 2cm sacral pressure injury, partial thickness, moderate drainage, periwound erythema. Pain: 3/10 at rest, 7/10 with ambulation." oninput="updateOutput()"></textarea>
+    </div>
+
+    <!-- Section 6: Plan -->
+    <div class="section-title">Plan <span class="sbar">— care plan and next visit</span></div>
+    <div class="field-group">
+      <label>Plan of care <span class="hint">— what will be done, what was set up, referrals, orders</span></label>
+      <textarea id="plan" rows="2" placeholder="e.g., Will continue skilled nursing for wound care 2x/week, medication management, and cardiopulmonary assessment. PT consulted for gait training and fall risk reduction. MD notified of BP and wound findings. New orders received for wound care supplies." oninput="updateOutput()"></textarea>
+    </div>
+    <div class="field-group">
+      <label>Next visit <span class="hint">— date and which nurse is scheduled</span></label>
+      <input type="text" id="next-visit" placeholder="e.g., 8/22/26 with RN Katie" oninput="updateOutput()">
+    </div>
+
+    <!-- Output -->
+    <div class="output-section">
+      <label style="font-size:13px;font-weight:600;color:var(--blue);display:block;margin-bottom:8px;">Your SOC Narrative:</label>
+      <div class="output-box" id="output"><span class="placeholder">Fill in the fields above to build your narrative...</span></div>
+      <button class="copy-btn" id="copyBtn" onclick="copyOutput()">
+        <span class="icon">📋</span>
+        <span id="copyText">Copy Narrative</span>
+      </button>
+    </div>
+
+    <div class="footer">
+      © 2026 Katie Escobar, RN. All rights reserved. Single-user license only. @bettercharting<br>
+      Documentation support tool — review before signing. Follow agency policy and provider orders.
+    </div>
+  </div>
+</div>
+
+<script>
+  let medMode = 'taught';
+
+  function selectMedMode(mode) {
+    medMode = mode;
+    document.getElementById('btn-taught').classList.toggle('active', mode === 'taught');
+    document.getElementById('btn-knowledgeable').classList.toggle('active', mode === 'knowledgeable');
+    document.getElementById('med-taught').classList.toggle('active', mode === 'taught');
+    document.getElementById('med-knowledgeable').classList.toggle('active', mode === 'knowledgeable');
+    updateOutput();
+  }
+
+  function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  function updateOutput() {
+    const rep = v('rep-name');
+    const pronoun = v('pronoun');
+    const goal = v('goal');
+    const situation = v('situation');
+    const dcDate = v('dc-date');
+    const los = v('los');
+    const admitReason = v('admit-reason');
+    const inpatientEvents = v('inpatient-events');
+    const pertinentHx = v('pertinent-hx');
+    const assessment = v('assessment');
+    const plan = v('plan');
+    const nextVisit = v('next-visit');
+
+    // Check if any fields are filled
+    const hasContent = rep || goal || situation || dcDate || admitReason || pertinentHx || assessment || plan;
+    if (!hasContent) {
+      document.getElementById('output').innerHTML = '<span class="placeholder">Fill in the fields above to build your narrative...</span>';
+      return;
+    }
+
+    // Build the med education line
+    let medLine = '';
+    if (medMode === 'taught') {
+      const who = v('taught-who');
+      const med = v('taught-med');
+      const sides = v('taught-sides');
+      medLine = ` ${who || 'Patient/caregiver'} educated on the high risk med${med ? ` ${med}` : ' [HIGH RISK MED]'}${sides ? ` including side effects of ${sides}` : ''}.`;
+    } else {
+      const who = v('know-who');
+      const med = v('know-med');
+      medLine = ` ${who || 'Patient/caregiver'} ${med ? `(based on assessment)` : ''} are 100% knowledgeable with medication regimen dose, indications, side effects, and interactions of all medication${med ? ` including high risk medication ${med}` : ' including high risk medication [LIST]'}.`;
+    }
+
+    // Build opening paragraph
+    let text = `Advance care plan established involving the patient and their representative${rep ? ` ${rep}` : ' [REPRESENTATIVE]'}, including the medical treatment preferences, understanding of illness, interventions, goals and discharge plans. Patient/caregiver states ${pronoun || 'their'} goal is to ${goal || '[GOAL]'}.${medLine}`;
+
+    // SBAR: Situation
+    if (situation) {
+      text += `\n\n${situation}`;
+    }
+
+    // SBAR: Background
+    if (dcDate || los || admitReason || inpatientEvents) {
+      text += `\n\nPatient was discharged on ${dcDate || '[DATE]'}${los ? ` after ${los} in the hospital` : ''}`;
+      if (admitReason) {
+        text += ` with a brief history of ${admitReason}`;
+      }
+      if (inpatientEvents) {
+        text += `. Significant events while inpatient: ${inpatientEvents}`;
+      }
+      text += '.';
+    }
+
+    // Pertinent history
+    if (pertinentHx) {
+      text += `\n\nPertinent history: ${pertinentHx}`;
+    }
+
+    // Assessment
+    if (assessment) {
+      text += `\n\nAssessment: ${assessment}`;
+    }
+
+    // Plan
+    if (plan) {
+      text += `\n\nPlan: ${plan}`;
+    }
+
+    // Next visit
+    if (nextVisit) {
+      text += `\nNext visit scheduled for ${nextVisit}.`;
+    }
+
+    document.getElementById('output').textContent = text;
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output').textContent;
+    if (text.includes('Fill in the fields above')) return;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(() => fallback(text));
+    } else { fallback(text); }
+  }
+
+  function fallback(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showCopied(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function showCopied() {
+    const btn = document.getElementById('copyBtn');
+    const text = document.getElementById('copyText');
+    btn.classList.add('copied'); text.textContent = 'Copied!';
+    setTimeout(() => { btn.classList.remove('copied'); text.textContent = 'Copy Narrative'; }, 2000);
+  }
+</script>
+</body>
+</html>

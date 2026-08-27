@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wound VAC Charting Builder — @bettercharting</title>
+<style>
+  :root {
+    --blue: #123b62; --blue-light: #eef7ff; --blue-border: #2f80c0;
+    --grey: #526070; --green: #2f8f4e; --green-bg: #f6fbf7; --green-border: #cbe7d1;
+    --orange-bg: #fff8ed; --orange-border: #f1d1a6; --orange-left: #d9822b;
+    --bg: #f0f4f8; --white: #fff; --border: #d8e2ec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #172033; line-height: 1.5; padding: 20px; }
+  .container { max-width: 840px; margin: 0 auto; background: var(--white); border-radius: 12px; box-shadow: 0 4px 24px rgba(15,23,42,.12); overflow: hidden; }
+  .header { background: var(--blue); color: var(--white); padding: 20px 28px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .body { padding: 24px 28px 32px; }
+
+  .golden-rule { background: var(--orange-bg); border: 1px solid var(--orange-border); border-left: 4px solid var(--orange-left); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #7a5c2a; margin-bottom: 20px; }
+  .golden-rule b { color: var(--orange-left); }
+
+  .section { border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+  .section-header { background: var(--blue); color: var(--white); padding: 10px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .section-header h2 { font-size: 14px; font-weight: 700; }
+  .section-header .toggle { font-size: 16px; transition: transform .2s; }
+  .section.collapsed .section-body { display: none; }
+  .section.collapsed .toggle { transform: rotate(-90deg); }
+  .section-body { padding: 14px 18px; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .field-group { margin-bottom: 10px; flex: 1; min-width: 140px; }
+  .field-group label { display: block; font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 3px; }
+  .field-group label .hint { font-weight: 400; color: var(--grey); font-size: 11px; }
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit; color: #172033; background: var(--white);
+  }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    outline: none; border-color: var(--blue-border); box-shadow: 0 0 0 3px rgba(47,128,192,.12);
+  }
+  .field-group textarea { resize: vertical; }
+
+  .cues { background: #f7fafc; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin: 8px 0 4px; font-size: 12px; color: var(--grey); line-height: 1.6; }
+  .cues b { color: var(--blue); }
+  .cues ul { margin: 4px 0 0 16px; padding: 0; }
+  .cues li { margin-bottom: 3px; }
+
+  .seal-detail { display: none; }
+  .trouble-detail { display: none; }
+
+  .output-section { margin-top: 24px; }
+  .output-box { background: #f4f8fc; border: 2px solid var(--blue-border); border-radius: 8px; padding: 16px 18px; font-size: 13px; line-height: 1.7; min-height: 80px; white-space: pre-wrap; word-break: break-word; }
+  .output-box .placeholder { color: #bbb; font-style: italic; }
+
+  .copy-all-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    background: var(--green); color: var(--white); border: none; border-radius: 10px;
+    padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 12px; transition: background .15s;
+  }
+  .copy-all-btn:hover { background: #226637; }
+  .copy-all-btn:active { transform: scale(.98); }
+  .copy-all-btn.copied { background: #1a5c2c; }
+
+  .footer { text-align: center; font-size: 11px; color: #a0b0c0; padding: 16px 0 0; border-top: 1px solid var(--border); margin-top: 24px; }
+
+  @media (max-width: 600px) { body { padding: 10px; } .body { padding: 16px 18px 24px; } .row { flex-direction: column; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Wound VAC Charting Builder</h1>
+    <div class="subtitle">Fill in the NPWT visit details, copy your note into the chart. PHI-free — never type patient identifiers. @bettercharting</div>
+  </div>
+  <div class="body">
+
+    <div class="golden-rule">
+      <b>Golden rule:</b> Document what you see, what you did, and why a skilled nurse was required. Every NPWT note needs: wound assessment, foam count (in and out), pressure setting, seal status, pump function, patient tolerance, and teaching. Count in, count out — every time.
+    </div>
+
+    <!-- 1. Wound Assessment -->
+    <div class="section" id="sec-wound">
+      <div class="section-header" onclick="toggleSection('sec-wound')">
+        <h2>🩸 Wound Assessment</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Wound location</label>
+            <input type="text" id="w-location" placeholder="e.g., Right lateral malleolus" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Length (cm)</label>
+            <input type="text" id="w-length" placeholder="e.g., 5.0" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Width (cm)</label>
+            <input type="text" id="w-width" placeholder="e.g., 3.5" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Depth (cm)</label>
+            <input type="text" id="w-depth" placeholder="e.g., 1.2" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Tunneling <span class="hint">— cm + clock</span></label>
+            <input type="text" id="w-tunnel" placeholder="e.g., 2 cm at 3 o'clock" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Undermining <span class="hint">— cm + clock</span></label>
+            <input type="text" id="w-undermine" placeholder="e.g., 1 cm at 9–11 o'clock" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Wound bed tissue %</label>
+            <input type="text" id="w-tissue" placeholder="e.g., 80% granulation, 15% slough, 5% eschar" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Exudate amount</label>
+            <select id="w-exudate" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="scant">Scant</option>
+              <option value="small">Small</option>
+              <option value="moderate">Moderate</option>
+              <option value="large">Large</option>
+              <option value="copious">Copious</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Exudate type</label>
+            <select id="w-extype" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="serous">Serous</option>
+              <option value="sanguineous">Sanguineous</option>
+              <option value="serosanguineous">Serosanguineous</option>
+              <option value="purulent">Purulent</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Odor</label>
+            <select id="w-odor" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="no odor noted">None</option>
+              <option value="mild odor noted">Mild</option>
+              <option value="moderate odor noted">Moderate</option>
+              <option value="foul odor noted">Foul</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Periwound skin</label>
+            <select id="w-peri" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="intact, clean, and dry">Intact, clean, dry</option>
+              <option value="macerated">Macerated</option>
+              <option value="erythematous">Erythematous</option>
+              <option value="denuded">Denuded</option>
+              <option value="excoriated">Excoriated</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Size change since last visit</label>
+            <select id="w-change" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="a decrease in size from last visit">Decreased</option>
+              <option value="an increase in size from last visit">Increased</option>
+              <option value="no change in size from last visit">No change</option>
+              <option value="measured at SOC — no prior comparison available">SOC (first visit)</option>
+            </select>
+          </div>
+        </div>
+        <div class="cues">
+          <b>Measure every visit.</b> Length (head-to-toe) × Width (side-to-side) × Depth (deepest point). Note tissue % and exudate. Track the trend — change or no change, both are significant.
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. NPWT Setup -->
+    <div class="section collapsed" id="sec-npwt">
+      <div class="section-header" onclick="toggleSection('sec-npwt')">
+        <h2>⚙️ NPWT Setup & Settings</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Foam type</label>
+            <select id="n-foamtype" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="black foam (polyurethane)">Black (polyurethane)</option>
+              <option value="white foam (polyvinyl alcohol)">White (PVA)</option>
+              <option value="black foam for wound bed and white foam for tunneling">Black + White (bed + tunnel)</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Pressure setting (mmHg)</label>
+            <select id="n-pressure" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="-125 mmHg">-125 mmHg (standard)</option>
+              <option value="-75 mmHg">-75 mmHg (fragile tissue)</option>
+              <option value="-150 mmHg">-150 mmHg (heavy drainage)</option>
+              <option value="-200 mmHg">-200 mmHg (heavy drainage)</option>
+              <option value="-80 mmHg">-80 mmHg (PICO pre-set)</option>
+              <option value="other">Other (specify below)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Pressure (if other)</label>
+            <input type="text" id="n-pressure-other" placeholder="e.g., -100 mmHg" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Mode</label>
+            <select id="n-mode" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="continuous">Continuous</option>
+              <option value="intermittent">Intermittent</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Foam pieces placed <span class="hint">— count in</span></label>
+            <input type="text" id="n-foamin" placeholder="e.g., 3" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Foam pieces removed <span class="hint">— count out</span></label>
+            <input type="text" id="n-foamout" placeholder="e.g., 3" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Canister drainage (mL)</label>
+            <input type="text" id="n-canister" placeholder="e.g., 60 mL serous" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Dressing change frequency</label>
+            <select id="n-freq" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="every 48 hours">Every 48 hours</option>
+              <option value="every 72 hours">Every 72 hours</option>
+              <option value="every 48–72 hours">Every 48–72 hours</option>
+              <option value="weekly">Weekly</option>
+              <option value="daily">Daily</option>
+              <option value="PRN per orders">PRN</option>
+            </select>
+          </div>
+        </div>
+        <div class="cues">
+          <b>Count in, count out — every time.</b> If the count doesn't match, do not leave until resolved. Retained foam = infection risk. <b>Standard pressure:</b> -125 mmHg continuous. Lower (-75) for fragile tissue. Higher (-150 to -200) for heavy drainage.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Seal & Pump -->
+    <div class="section collapsed" id="sec-seal">
+      <div class="section-header" onclick="toggleSection('sec-seal')">
+        <h2>🔧 Seal & Pump Status</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Seal achieved?</label>
+            <select id="s-seal" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="seal">Seal achieved on first attempt</option>
+              <option value="seal-after">Seal achieved after troubleshooting</option>
+              <option value="seal-fail">Unable to maintain seal</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Pump function</label>
+            <select id="s-pump" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="Pump functioning at target pressure, no alarms">At target pressure, no alarms</option>
+              <option value="Pump functioning after troubleshooting, no active alarms">Functioning after troubleshooting</option>
+              <option value="Pump alarming — seal issue unresolved at time of departure">Alarming — unresolved</option>
+              <option value="Pump battery low — patient instructed to charge">Battery low</option>
+            </select>
+          </div>
+        </div>
+        <div class="seal-detail" id="seal-detail">
+          <div class="row">
+            <div class="field-group">
+              <label>What was the problem?</label>
+              <input type="text" id="s-problem" placeholder="e.g., air leak at drape edge near perineum" oninput="updateOutput()">
+            </div>
+            <div class="field-group">
+              <label>How was it fixed?</label>
+              <input type="text" id="s-fix" placeholder="e.g., reinforced with extra drape, applied benzoin to edge" oninput="updateOutput()">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Pro techniques used <span class="hint">— optional</span></label>
+            <select id="s-technique" onchange="updateOutput()">
+              <option value="">Select any that apply...</option>
+              <option value="tincture of benzoin applied to periwound for adhesion">Benzoin on periwound</option>
+              <option value="ostomy paste applied to creases/folds for seal">Ostomy paste in creases</option>
+              <option value="picture-framing with hydrocolloid around wound edges">Picture-frame with hydrocolloid</option>
+              <option value="foam raised 1–2 cm above skin level to prevent epibole">Foam raised above skin</option>
+              <option value="pressure temporarily bumped +25–50 mmHg to locate leak">Temp pressure bump to find leak</option>
+              <option value="tubing bridged to anterior surface with foam padding">Tubing bridged to prevent MDRPI</option>
+              <option value="ostomy powder + barrier applied to weepy periwound skin">Ostomy powder + barrier on weepy skin</option>
+            </select>
+          </div>
+        </div>
+        <div class="cues">
+          <b>Most common NPWT problem: lost seal.</b> Check tubing connection, kinks, canister seating first. Then check drape edges — run finger around slowly to find air leak. Patch, don't redo. If periwound is moist or sweaty, use benzoin or ostomy paste.
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Pain -->
+    <div class="section collapsed" id="sec-pain">
+      <div class="section-header" onclick="toggleSection('sec-pain')">
+        <h2>🤕 Pain & Tolerance</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Pain before (0–10)</label>
+            <input type="text" id="pa-before" placeholder="e.g., 2" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Pain during (0–10)</label>
+            <input type="text" id="pa-during" placeholder="e.g., 5" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Pain after (0–10)</label>
+            <input type="text" id="pa-after" placeholder="e.g., 3" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Pre-medication given</label>
+            <input type="text" id="pa-med" placeholder="e.g., Acetaminophen 650mg at 0915" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>Patient tolerance</label>
+            <select id="pa-tol" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="Patient tolerated procedure well">Tolerated well</option>
+              <option value="Patient tolerated procedure with mild discomfort">Mild discomfort</option>
+              <option value="Patient required a rest break during procedure">Required rest break</option>
+              <option value="Patient tolerated procedure with difficulty">With difficulty</option>
+            </select>
+          </div>
+        </div>
+        <div class="cues">
+          <b>Pre-medicate 30 min before</b> if ordered. NPWT dressing changes can be painful, especially first few changes. If pain is recurring, talk to provider about lowering pressure or adding a non-adherent interface layer.
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Teaching -->
+    <div class="section collapsed" id="sec-teach">
+      <div class="section-header" onclick="toggleSection('sec-teach')">
+        <h2>📚 Patient & Caregiver Teaching</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="field-group">
+          <label>Teaching topics covered</label>
+          <div style="font-size: 12px; color: var(--grey); margin-bottom: 6px;">Check all that apply:</div>
+          <div style="font-size: 13px; line-height: 1.8;">
+            <label><input type="checkbox" id="t-donttouch" onchange="updateOutput()"> Do NOT disconnect pump or lift drape</label><br>
+            <label><input type="checkbox" id="t-upright" onchange="updateOutput()"> Keep pump upright / canister position</label><br>
+            <label><input type="checkbox" id="t-alarms" onchange="updateOutput()"> What alarms mean / when to call agency</label><br>
+            <label><input type="checkbox" id="t-dry" onchange="updateOutput()"> Keep dressing dry / no submersion</label><br>
+            <label><input type="checkbox" id="t-tubing" onchange="updateOutput()"> Keep tubing straight, no kinks</label><br>
+            <label><input type="checkbox" id="t-signs" onchange="updateOutput()"> Signs to call about: pain, bleeding, fever, odor, redness</label><br>
+            <label><input type="checkbox" id="t-painmed" onchange="updateOutput()"> Pre-medicate 30 min before dressing changes</label><br>
+            <label><input type="checkbox" id="t-demonstrate" onchange="updateOutput()"> Caregiver return-demonstrated pump care</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Patient/caregiver response</label>
+            <select id="t-response" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="verbalized understanding and demonstrated correct pump care">Verbalized + demonstrated</option>
+              <option value="verbalized understanding of teaching provided">Verbalized understanding</option>
+              <option value="needs reinforcement on pump alarms and when to call — further teaching required">Needs reinforcement</option>
+              <option value="unable to demonstrate safe pump care — further teaching needed">Unable to demonstrate — further teaching needed</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Further teaching needed</label>
+          <input type="text" id="t-next" placeholder="e.g., reinforce alarm response and signs of infection at next visit" oninput="updateOutput()">
+        </div>
+        <div class="cues">
+          <b>Teach the DO NOT TOUCH rule before you leave.</b> The #1 reason for between-visit alarms: a caregiver touched the pump or drape. Show them what to do, have them demonstrate back, and leave a written card: pump stays on, keep upright, call if it alarms.
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Escalation -->
+    <div class="section collapsed" id="sec-escalation">
+      <div class="section-header" onclick="toggleSection('sec-escalation')">
+        <h2>📞 Escalation</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Was the provider notified?</label>
+            <select id="e-notified" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="no-escalation">No — no escalation needed this visit</option>
+              <option value="yes">Yes — provider notified</option>
+            </select>
+          </div>
+        </div>
+        <div class="seal-detail" id="esc-detail">
+          <div class="row">
+            <div class="field-group">
+              <label>Time of call</label>
+              <input type="text" id="e-time" placeholder="e.g., 1015" oninput="updateOutput()">
+            </div>
+            <div class="field-group">
+              <label>Who you spoke with</label>
+              <input type="text" id="e-who" placeholder="e.g., Dr. Smith / covering NP" oninput="updateOutput()">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Reason for call</label>
+            <input type="text" id="e-reason" placeholder="e.g., new purulent drainage and increased pain" oninput="updateOutput()">
+          </div>
+          <div class="field-group">
+            <label>New orders received</label>
+            <input type="text" id="e-orders" placeholder="e.g., wound culture ordered, continue NPWT, follow up in 3 days" oninput="updateOutput()">
+          </div>
+        </div>
+        <div class="cues">
+          <b>When to call:</b> spreading erythema, purulent drainage, foul odor, fever ≥100.4°F, uncontrolled pain, wound stalled or increasing, maceration spreading, foam count mismatch, pump failure with no backup. If you called — document time, who, what was discussed, and orders received.
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Skilled Rationale -->
+    <div class="section collapsed" id="sec-skilled">
+      <div class="section-header" onclick="toggleSection('sec-skilled')">
+        <h2>🏥 Skilled Rationale</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="row">
+          <div class="field-group">
+            <label>Why does this wound require NPWT by a skilled nurse?</label>
+            <select id="sk-rationale" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="NPWT placement, assessment, and seal management beyond the safe ability of patient/caregiver">NPWT management beyond patient ability</option>
+              <option value="wound assessment and infection surveillance requiring skilled technique beyond caregiver ability">Wound assessment + infection surveillance</option>
+              <option value="NPWT dressing change with foam-count safety and seal troubleshooting requiring skilled nursing">Dressing change + foam-count safety + seal troubleshooting</option>
+              <option value="complex wound care with NPWT requiring skilled technique, pressure monitoring, and patient/caregiver teaching">Complex NPWT care + teaching</option>
+              <option value="teaching plan in progress — caregiver requires additional sessions to safely manage NPWT independently">Teaching plan — caregiver not yet independent</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field-group">
+            <label>Wound progress</label>
+            <select id="sk-progress" onchange="updateOutput()">
+              <option value="">Select...</option>
+              <option value="Wound is progressing — NPWT promoting granulation and reducing wound size. Continued skilled care required to monitor for complications and promote closure">Progressing — granulation + size reduction</option>
+              <option value="Wound is stalled — NPWT continued per provider order. Continued skilled care required to reassess treatment plan and prevent deterioration">Stalled — reassessing</option>
+              <option value="Wound is deteriorating — continued skilled care required to monitor complications, adjust treatment per provider, and prevent further decline">Deteriorating — monitoring</option>
+              <option value="Wound is stable — NPWT maintaining current progress. Continued skilled care required to monitor for changes and maintain treatment plan">Stable — maintaining</option>
+            </select>
+          </div>
+        </div>
+        <div class="cues">
+          <b>Every NPWT note must answer:</b> why does this wound require a skilled nurse? State what the nurse did that the patient/caregiver cannot do safely — NPWT technique, seal management, infection monitoring, foam-count safety, and teaching.
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Next Visit -->
+    <div class="section collapsed" id="sec-next">
+      <div class="section-header" onclick="toggleSection('sec-next')">
+        <h2>📅 Next Visit Plan</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="field-group">
+          <label>Next visit — what will you assess?</label>
+          <input type="text" id="nx-assess" placeholder="e.g., reassess wound measurements, tissue %, exudate, periwound, seal integrity, foam count" oninput="updateOutput()">
+        </div>
+        <div class="field-group">
+          <label>Next dressing change date/frequency</label>
+          <input type="text" id="nx-date" placeholder="e.g., in 72 hours per order / on [date]" oninput="updateOutput()">
+        </div>
+        <div class="field-group">
+          <label>Reinforce or monitor</label>
+          <input type="text" id="nx-monitor" placeholder="e.g., reinforce pump alarm response and signs of infection, monitor for seal integrity" oninput="updateOutput()">
+        </div>
+        <div class="cues">
+          <b>State the plan:</b> when is the next dressing change (per orders), what will you assess, and what complications are you watching for? Instruct patient/caregiver to call if signs develop before next scheduled visit.
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Output -->
+    <div class="output-section">
+      <h2 style="font-size: 15px; font-weight: 700; color: var(--blue); margin-bottom: 8px;">📋 Your NPWT Note</h2>
+      <div class="output-box" id="output"><span class="placeholder">Fill in the sections above — your NPWT note will build here as you type.</span></div>
+      <button class="copy-all-btn" id="copyAll" onclick="copyAll()"><span class="icon">📋</span> Copy NPWT Note</button>
+    </div>
+
+    <div class="footer">
+      © 2026 Katie Escobar, RN. All rights reserved. Single-user license only. @bettercharting<br>
+      Documentation support tool — not legal advice. Follow agency policy, manufacturer instructions, payer requirements, and provider orders.
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleSection(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+
+  function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  function updateOutput() {
+    // Show/hide seal detail
+    const sealStatus = v('s-seal');
+    const sealDetail = document.getElementById('seal-detail');
+    if (sealStatus === 'seal-after' || sealStatus === 'seal-fail') {
+      sealDetail.style.display = '';
+    } else {
+      sealDetail.style.display = 'none';
+    }
+
+    // Show/hide escalation detail
+    const notified = v('e-notified');
+    const escDetail = document.getElementById('esc-detail');
+    if (notified === 'yes') {
+      escDetail.style.display = '';
+    } else {
+      escDetail.style.display = 'none';
+    }
+
+    // Collect all fields
+    const loc = v('w-location'), len = v('w-length'), wid = v('w-width'), dep = v('w-depth');
+    const tunnel = v('w-tunnel'), undermine = v('w-undermine'), tissue = v('w-tissue');
+    const exudate = v('w-exudate'), extype = v('w-extype'), odor = v('w-odor');
+    const peri = v('w-peri'), change = v('w-change');
+
+    const foamtype = v('n-foamtype'), pressure = v('n-pressure'), pressureOther = v('n-pressure-other');
+    const mode = v('n-mode'), foamIn = v('n-foamin'), foamOut = v('n-foamout');
+    const canister = v('n-canister'), freq = v('n-freq');
+
+    const seal = v('s-seal'), pump = v('s-pump'), problem = v('s-problem');
+    const fix = v('s-fix'), technique = v('s-technique');
+
+    const paBefore = v('pa-before'), paDuring = v('pa-during'), paAfter = v('pa-after');
+    const paMed = v('pa-med'), paTol = v('pa-tol');
+
+    const tResponse = v('t-response'), tNext = v('t-next');
+    const tChecks = [];
+    if (document.getElementById('t-donttouch').checked) tChecks.push('do not disconnect pump or lift drape');
+    if (document.getElementById('t-upright').checked) tChecks.push('keep pump upright');
+    if (document.getElementById('t-alarms').checked) tChecks.push('what alarms mean and when to call agency');
+    if (document.getElementById('t-dry').checked) tChecks.push('keep dressing dry');
+    if (document.getElementById('t-tubing').checked) tChecks.push('keep tubing straight and kink-free');
+    if (document.getElementById('t-signs').checked) tChecks.push('signs to call about (pain, bleeding, fever, odor, redness)');
+    if (document.getElementById('t-painmed').checked) tChecks.push('pre-medicate 30 min before dressing changes');
+    if (document.getElementById('t-demonstrate').checked) tChecks.push('caregiver return-demonstrated pump care');
+
+    const eNotified = v('e-notified'), eTime = v('e-time'), eWho = v('e-who');
+    const eReason = v('e-reason'), eOrders = v('e-orders');
+
+    const skRationale = v('sk-rationale'), skProgress = v('sk-progress');
+    const nxAssess = v('nx-assess'), nxDate = v('nx-date'), nxMonitor = v('nx-monitor');
+
+    // Check if anything is filled
+    const allEmpty = !loc && !len && !wid && !dep && !tunnel && !undermine && !tissue &&
+      !exudate && !extype && !odor && !peri && !change && !foamtype && !pressure &&
+      !pressureOther && !mode && !foamIn && !foamOut && !canister && !freq && !seal &&
+      !pump && !problem && !fix && !technique && !paBefore && !paDuring && !paAfter &&
+      !paMed && !paTol && !tResponse && !tNext && tChecks.length === 0 && !eNotified &&
+      !skRationale && !skProgress && !nxAssess && !nxDate && !nxMonitor;
+
+    if (allEmpty) {
+      document.getElementById('output').innerHTML = '<span class="placeholder">Fill in the sections above — your NPWT note will build here as you type.</span>';
+      return;
+    }
+
+    let parts = [];
+    const pressureVal = pressureOther || pressure;
+
+    // --- Wound Assessment ---
+    if (loc || len || wid || dep) {
+      let m = 'Wound';
+      if (loc) m += ` at ${loc}`;
+      if (len && wid && dep) m += ` measures ${len} × ${wid} × ${dep} cm`;
+      else if (len && wid) m += ` measures ${len} × ${wid} cm`;
+      else if (len) m += ` measures ${len} cm (L)`;
+      if (change) m += `, ${change}`;
+      m += '.';
+      parts.push(m);
+
+      if (tunnel || undermine) {
+        let tm = '';
+        if (tunnel) tm += `${tunnel} tunneling noted`;
+        if (undermine) tm += (tunnel ? '; ' : '') + `${undermine} undermining noted`;
+        parts.push(tm + '.');
+      } else {
+        parts.push('No tunneling or undermining noted at this time.');
+      }
+
+      if (tissue) parts.push(`Wound bed is ${tissue}.`);
+      if (exudate || extype) {
+        let d = 'Exudate';
+        if (exudate) d += ` is ${exudate}`;
+        if (extype) d += ` ${extype}`;
+        d += ' in volume';
+        if (odor) d += `; ${odor}`;
+        d += '.';
+        parts.push(d);
+      }
+      if (peri) parts.push(`Periwound skin is ${peri}.`);
+    }
+
+    // --- NPWT Setup ---
+    if (foamtype || pressureVal || mode || foamIn || foamOut || canister || freq) {
+      let np = 'NPWT applied';
+      if (foamtype) np += ` using ${foamtype}`;
+      if (pressureVal && mode) np += ` at ${pressureVal} ${mode} mode`;
+      else if (pressureVal) np += ` at ${pressureVal}`;
+      else if (mode) np += ` in ${mode} mode`;
+      if (freq) np += ` per order for ${freq} dressing changes`;
+      np += '.';
+      parts.push(np);
+
+      if (foamIn || foamOut) {
+        if (foamIn && foamOut) {
+          if (foamIn === foamOut) {
+            parts.push(`${foamIn} foam piece(s) placed; ${foamOut} removed from previous dressing. Count matches. No retained foam.`);
+          } else {
+            parts.push(`${foamIn} foam piece(s) placed; ${foamOut} removed from previous dressing. Count discrepancy — see escalation.`);
+          }
+        } else if (foamIn) {
+          parts.push(`${foamIn} foam piece(s) placed this visit.`);
+        } else if (foamOut) {
+          parts.push(`${foamOut} foam piece(s) removed from previous dressing.`);
+        }
+      }
+      if (canister) parts.push(`${canister} in canister.`);
+    }
+
+    // --- Seal & Pump ---
+    if (seal === 'seal') {
+      parts.push('Seal achieved on first attempt; drape flat and slightly dimpled over foam indicating negative pressure is pulling through.');
+    } else if (seal === 'seal-after') {
+      let s = 'Seal achieved after troubleshooting';
+      if (problem) s += `: ${problem}`;
+      if (fix) s += ` — ${fix}`;
+      s += '.';
+      parts.push(s);
+      if (technique) parts.push(`Pro technique used: ${technique}.`);
+    } else if (seal === 'seal-fail') {
+      let s = 'Unable to maintain seal';
+      if (problem) s += ` due to ${problem}`;
+      s += '.';
+      parts.push(s);
+      if (fix) parts.push(`Intervention attempted: ${fix}.`);
+      if (technique) parts.push(`Pro technique used: ${technique}.`);
+    }
+
+    if (pump) parts.push(pump + '.');
+
+    // --- Pain ---
+    if (paBefore || paDuring || paAfter) {
+      let p = 'Pain assessed';
+      if (paBefore) p += ` at ${paBefore}/10 before procedure`;
+      if (paDuring) p += `, ${paDuring}/10 during`;
+      if (paAfter) p += `, ${paAfter}/10 after dressing change`;
+      p += '.';
+      parts.push(p);
+    }
+    if (paMed) parts.push(`Pre-medicated with ${paMed}.`);
+    if (paTol) parts.push(paTol + '.');
+
+    // --- Teaching ---
+    if (tChecks.length > 0 || tResponse) {
+      if (tChecks.length > 0) {
+        parts.push(`Teaching provided on: ${tChecks.join(', ')}.`);
+      }
+      if (tResponse) parts.push(`Patient/caregiver ${tResponse}.`);
+      if (tNext) parts.push(`Further teaching needed: ${tNext}.`);
+    }
+
+    // --- Escalation ---
+    if (eNotified === 'no-escalation') {
+      parts.push('No escalation needed this visit. No signs of infection, foam count discrepancy, or seal failure requiring provider notification.');
+    } else if (eNotified === 'yes') {
+      let esc = 'Provider notified';
+      if (eReason) esc += ` regarding ${eReason}`;
+      if (eTime) esc += ` at ${eTime}`;
+      if (eWho) esc += `; spoke with ${eWho}`;
+      esc += '.';
+      parts.push(esc);
+      if (eOrders) parts.push(`New orders: ${eOrders}.`);
+    }
+
+    // --- Skilled Rationale ---
+    if (skRationale) parts.push(`Skilled nursing visit justified: ${skRationale}.`);
+    if (skProgress) parts.push(`${skProgress}.`);
+
+    // --- Next Visit ---
+    if (nxAssess || nxDate || nxMonitor) {
+      if (nxDate) parts.push(`Next NPWT dressing change due ${nxDate}.`);
+      if (nxAssess || nxMonitor) {
+        let nx = 'Next SN visit to ';
+        if (nxAssess) nx += `reassess ${nxAssess}`;
+        if (nxAssess && nxMonitor) nx += ', and ';
+        if (nxMonitor) nx += nxMonitor;
+        nx += '.';
+        parts.push(nx);
+      }
+    }
+
+    const output = document.getElementById('output');
+    output.textContent = parts.join(' ');
+  }
+
+  function copyAll() {
+    const output = document.getElementById('output');
+    const text = output.textContent;
+    if (text.includes('Fill in the sections above')) return;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(showCopiedAll).catch(() => fallbackCopyAll(text));
+    } else { fallbackCopyAll(text); }
+  }
+
+  function fallbackCopyAll(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showCopiedAll(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function showCopiedAll() {
+    const btn = document.getElementById('copyAll');
+    btn.classList.add('copied');
+    btn.innerHTML = '<span class="icon">✅</span> Copied! Paste into your chart.';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<span class="icon">📋</span> Copy NPWT Note';
+    }, 2500);
+  }
+</script>
+</body>
+</html>
