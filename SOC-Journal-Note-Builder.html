@@ -151,6 +151,10 @@
       </div>
 
       <div class="sec">IV / access / labs</div>
+      <div class="only-ghc" style="margin-bottom:10px;">
+        <button type="button" class="chip" id="noIvGhc" onclick="toggleNoIv(this)">No IV orders for this GHC</button>
+      </div>
+      <div id="ivBlock">
       <div class="fg"><label>IV ORDER</label><input id="ivOrder"></div>
       <div class="fg"><label>IV Medication <span class="hint">— F/U teach, what med?</span></label><input id="ivMed"></div>
       <div class="fg"><label>Next dose due at</label><input id="nextDose" placeholder="00:00 AM / 00:00 PM"></div>
@@ -158,6 +162,7 @@
       <div class="row">
         <div class="fg"><label>LABS</label><input id="labs"></div>
         <div class="fg"><label>DUE ON</label><input id="labsDue"></div>
+      </div>
       </div>
       <div class="fg"><label>IMMEDIATE NEEDS</label><textarea id="immNeed" rows="2"></textarea></div>
       <div class="fg"><label>VENOUS ACCESS DEVICE <span class="hint">— type, insertion date, total length, external length, blood return</span></label>
@@ -423,6 +428,19 @@ function toggleSolo(btn){
   }
   buildNote();
 }
+function toggleNoIv(btn){
+  btn.classList.toggle('active');
+  var block=document.getElementById('ivBlock');
+  if(btn.classList.contains('active')){
+    block.style.opacity='.35';
+    block.style.pointerEvents='none';
+  } else {
+    block.style.opacity='';
+    block.style.pointerEvents='';
+  }
+  buildNote();
+}
+
 function toggleEdu(name, btn){
   eduOn[name]=!eduOn[name];
   btn.classList.toggle('active', eduOn[name]);
@@ -489,11 +507,14 @@ function buildNote(){
   n.push(line('DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN', v('mdAppt')));
   n.push(line('DIAGNOSIS RELATED TO HOME CARE', v('dx')));
   if(pathVal==='ghc') n.push((chips.erRisk||'') + ' RISK FOR ER VISITS AND READMISSION TO HOSPITAL');
-  n.push(line('IV ORDER', v('ivOrder')));
-  n.push(line('IV Medication', v('ivMed')));
-  n.push(line('Next dose due at', v('nextDose')));
-  n.push(line('DATE OF LAST DRESSING CHANGE', v('lastDress')));
-  n.push('LABS: '+v('labs')+'                DUE ON: '+v('labsDue'));
+  var noIv = isOn('noIvGhc');
+  if(!(pathVal==='ghc' && noIv)){
+    n.push(line('IV ORDER', v('ivOrder')));
+    n.push(line('IV Medication', v('ivMed')));
+    n.push(line('Next dose due at', v('nextDose')));
+    n.push(line('DATE OF LAST DRESSING CHANGE', v('lastDress')));
+    n.push('LABS: '+v('labs')+'                DUE ON: '+v('labsDue'));
+  }
   n.push(line('IMMEDIATE NEEDS', v('immNeed')));
   var vad=line('VENOUS ACCESS DEVICE', v('vad'));
   if(isOn('noTotalLen')) vad+=' Total length is not documented.';
