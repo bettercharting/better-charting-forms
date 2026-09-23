@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC IV Journal — PCI / GHC | AZ Home Care</title>
+<style>
+  :root {
+    --blue: #123b62; --blue-light: #eef7ff; --blue-border: #2f80c0;
+    --grey: #526070; --green: #2f8f4e;
+    --pci: #c0392b; --pci-bg: #fdf0ee; --pci-border: #e8b8b2;
+    --ghc: #123b62; --ghc-bg: #eef7ff; --ghc-border: #2f80c0;
+    --orange-bg: #fff8ed; --orange-border: #f1d1a6; --orange-left: #d9822b;
+    --bg: #eef2f6; --white: #fff; --border: #d8e2ec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #172033; }
+  button, input[type="text"], input[type="email"], select, textarea { -webkit-appearance: none; appearance: none; font-family: inherit; font-size: 16px; }
+  body { padding: 12px; }
+
+  .noscript { background: #fff3cd; border: 2px solid #e0b000; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; color: #7a5c00; font-size: 14px; }
+  .js-ok { display: none; background: #eaf7ef; border: 1px solid #acd8bb; color: #226637; font-size: 12px; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px; }
+
+  .app { max-width: 1180px; margin: 0 auto; }
+  .header { background: var(--blue); color: #fff; padding: 16px 20px; border-radius: 12px 12px 0 0; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+
+  .path-bar { background: #fff; padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .path-bar .ask { font-size: 13px; font-weight: 700; color: var(--blue); margin-right: 6px; }
+  .path-btn { flex: 1; min-width: 160px; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; text-align: left; font-weight: 700; color: var(--grey); }
+  .path-btn .d { display: block; font-size: 11px; font-weight: 400; margin-top: 2px; }
+  .path-btn.pci.active { border-color: var(--pci); background: var(--pci-bg); color: var(--pci); }
+  .path-btn.ghc.active { border-color: var(--ghc-border); background: var(--ghc-bg); color: var(--ghc); }
+
+  .layout { display: grid; grid-template-columns: 1fr 300px; gap: 0; background: #fff; border-radius: 0 0 12px 12px; overflow: hidden; }
+  .main { padding: 16px 18px 28px; min-width: 0; }
+  .side { background: #f7fafc; border-left: 1px solid var(--border); padding: 14px 12px 24px; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .side { border-left: none; border-top: 1px solid var(--border); }
+  }
+
+  .tag { display: none; }
+
+  .only-pci, .only-ghc { display: none; }
+  body.path-pci .only-pci { display: block; }
+  body.path-ghc .only-ghc { display: block; }
+  body.path-pci .only-ghc, body.path-ghc .only-pci { display: none !important; }
+
+  .locked { opacity: .45; pointer-events: none; }
+  body.path-pci .locked, body.path-ghc .locked { opacity: 1; pointer-events: auto; }
+
+  .sec { font-size: 13px; font-weight: 700; color: var(--blue); margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--blue-light); }
+  .cue { background: var(--orange-bg); border: 1px solid var(--orange-border); border-left: 4px solid var(--orange-left); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #7a5c2a; margin: 0 0 10px; }
+  .fg { margin-bottom: 10px; }
+  .fg label { display: block; font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+  .fg .hint { font-weight: 400; color: var(--grey); font-size: 11px; }
+  .fg input, .fg select, .fg textarea {
+    width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+    color: #172033; background: #fff;
+  }
+  .fg textarea { min-height: 64px; resize: vertical; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row .fg { flex: 1; min-width: 140px; }
+
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { border: 2px solid var(--border); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--grey); }
+  .chip.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+
+  .edu-btn { width: 100%; text-align: left; border: 1.5px solid var(--border); background: #fff; border-radius: 8px; padding: 10px 10px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--blue); }
+  .edu-btn.active { border-color: var(--green); background: #eaf7ef; }
+  .edu-btn .s { display: block; font-size: 10px; font-weight: 400; color: var(--grey); }
+  .side h3 { font-size: 13px; color: var(--blue); margin-bottom: 8px; }
+  .side p { font-size: 11px; color: var(--grey); margin-bottom: 10px; line-height: 1.45; }
+  .chk { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .chk input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; accent-color: var(--green); }
+  .chk label { font-size: 12px; color: #2a3848; line-height: 1.4; }
+
+  .edu-card { display: none; border: 1.5px solid #cbe7d1; background: #f6fbf7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .edu-card.on { display: block; }
+  .edu-card h4 { font-size: 13px; color: var(--green); margin-bottom: 8px; }
+
+  .out-wrap { margin-top: 18px; }
+  #output { width: 100%; min-height: 220px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 8px; background: #f4f8fc; line-height: 1.55; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { border: none; border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; color: #fff; background: var(--blue); }
+  .btn.green { background: var(--green); }
+  .btn.copied { background: #1a5c2c; }
+  .footer { text-align: center; font-size: 11px; color: #a0b0c0; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<noscript><div class="noscript">JavaScript is off. Open this file in Safari or Chrome — not the Files preview — or use the iPad access page.</div></noscript>
+<div class="js-ok" id="jsOk">Ready — pick PCI or GHC, tab through blanks, click education to add it, then copy.</div>
+
+<div class="app">
+  <div class="header">
+    <h1>SOC Journal Note Builder</h1>
+    <div class="sub">PCI vs GHC — tab through blanks, click education to add it, copy the journal. Made for AZ Home Care.</div>
+  </div>
+
+  <div class="path-bar">
+    <span class="ask">Start here:</span>
+    <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI<span class="d">Private insurance IV — no OASIS</span></button>
+    <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC<span class="d">Medicare / OASIS SOC IV</span></button>
+  </div>
+
+  <div class="layout locked" id="work">
+    <div class="main">
+      <div class="cue" id="pathCue">Empty fields still copy their labels.</div>
+
+      <div class="sec">Visit header</div>
+      <div class="row">
+        <div class="fg"><label>SOC COMPLETED BY/DATE</label><input id="socBy" placeholder="Name / date"></div>
+        <div class="fg"><label>CASE MANAGER</label><input id="cm" placeholder="CM name"></div>
+      </div>
+      <div class="fg only-pci">
+        <label>CERT PERIOD <span class="hint">— until end of therapy or up to 52 weeks</span></label>
+        <input id="certPeriod" placeholder="e.g., until end of therapy / 52 weeks">
+      </div>
+      <div class="fg">
+        <label>FREQUENCY &amp; DURATION <span class="hint only-ghc">— up to 9 weeks</span></label>
+        <input id="freq" placeholder="e.g., SN 2x/week x 3 weeks">
+      </div>
+      <div class="fg only-ghc">
+        <label>HOSPITAL SELF RISK ASSESSMENT SCORE</label>
+        <input id="hospRisk" placeholder="Score">
+      </div>
+      <div class="fg"><label>OTHER CLINICIANS/FREQUENCY</label><input id="otherClin" placeholder="e.g., PT 2x/wk, HHA 3x/wk"></div>
+
+      <div class="only-ghc">
+        <div class="sec">Homebound</div>
+        <div class="cue">Paint a picture: extra effort to leave, tired after being out, assistance needed to leave safely, or the medical restriction the doctor would advise. Do not repeat checked-box items.</div>
+        <div class="fg"><label>Patient is homebound because of</label><textarea id="homebound" rows="3" placeholder="Why leaving takes considerable and taxing effort, what help is needed, or the medical restriction"></textarea></div>
+      </div>
+
+      <div class="sec">Physicians &amp; diagnosis</div>
+      <div class="fg"><label>PHYSICIAN SIGNING ORDERS</label><input id="mdSign"></div>
+      <div class="fg"><label>OTHER PHYSICIANS INVOLVED IN CARE</label><input id="mdOther"></div>
+      <div class="fg"><label>DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN</label><input id="mdAppt" placeholder="Date — which physician"></div>
+      <div class="fg"><label>DIAGNOSIS RELATED TO HOME CARE</label><input id="dx"></div>
+
+      <div class="only-ghc">
+        <div class="sec">ER / readmit risk</div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-k="erRisk" data-v="HIGH" onclick="setChip(this)">HIGH</button>
+          <button type="button" class="chip" data-k="erRisk" data-v="MODERATE" onclick="setChip(this)">MODERATE</button>
+          <button type="button" class="chip" data-k="erRisk" data-v="LOW" onclick="setChip(this)">LOW</button>
+        </div>
+      </div>
+
+      <div class="sec">IV / access / labs</div>
+      <div class="fg"><label>IV ORDER</label><input id="ivOrder"></div>
+      <div class="fg"><label>IV Medication <span class="hint">— F/U teach, what med?</span></label><input id="ivMed"></div>
+      <div class="fg"><label>Next dose due at</label><input id="nextDose" placeholder="00:00 AM / 00:00 PM"></div>
+      <div class="fg"><label>DATE OF LAST DRESSING CHANGE</label><input id="lastDress"></div>
+      <div class="row">
+        <div class="fg"><label>LABS</label><input id="labs"></div>
+        <div class="fg"><label>DUE ON</label><input id="labsDue"></div>
+      </div>
+      <div class="fg"><label>IMMEDIATE NEEDS</label><textarea id="immNeed" rows="2"></textarea></div>
+      <div class="fg"><label>VENOUS ACCESS DEVICE <span class="hint">— type, insertion date, total length, external length, blood return</span></label>
+        <input id="vad" placeholder="Type, date inserted, total length, external length, blood return">
+      </div>
+      <div class="fg">
+        <button type="button" class="chip" id="noTotalLen" onclick="toggleSolo(this)">Total length is not documented</button>
+      </div>
+
+      <div class="only-ghc">
+        <div class="sec">OASIS risk factors — click yes to add supporting detail</div>
+        <div class="cue">If you check any of these in the OASIS, your note must have supporting detail. Click the ones that apply — each adds a prompt line for your detail into the visit summary.</div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-1" onclick="toggleSolo(this); buildNote();">1. History of falls (2+ falls or any fall with injury in past 12 months)</button>
+        </div>
+        <div class="fg" id="risk-1-detail" style="display:none;"><label>Supporting detail — falls</label><textarea id="risk1d" rows="2" placeholder="e.g., Patient reports 3 falls in past 8 months, most recent fall at home resulting in ER visit for right hip contusion"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-2" onclick="toggleSolo(this); buildNote();">2. Unintentional weight loss of 10+ pounds in past 12 months</button>
+        </div>
+        <div class="fg" id="risk-2-detail" style="display:none;"><label>Supporting detail — weight loss</label><textarea id="risk2d" rows="2" placeholder="e.g., Patient reports unintentional 12 lb weight loss over past 6 months, from 165 lb to 153 lb. Reports poor appetite"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-3" onclick="toggleSolo(this); buildNote();">3. Multiple hospitalizations (2+ in past 6 months)</button>
+        </div>
+        <div class="fg" id="risk-3-detail" style="display:none;"><label>Supporting detail — hospitalizations</label><textarea id="risk3d" rows="2" placeholder="e.g., Patient hospitalized 3 times in past 4 months for CHF exacerbation — most recent discharge 8/15/26"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-4" onclick="toggleSolo(this); buildNote();">4. Multiple ED visits (2+ in past 6 months)</button>
+        </div>
+        <div class="fg" id="risk-4-detail" style="display:none;"><label>Supporting detail — ED visits</label><textarea id="risk4d" rows="2" placeholder="e.g., Patient reports 2 ER visits in past 3 months for shortness of breath, treated with nebulizer and discharged home"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-5" onclick="toggleSolo(this); buildNote();">5. Decline in mental, emotional, or behavioral status in past 3 months</button>
+        </div>
+        <div class="fg" id="risk-5-detail" style="display:none;"><label>Supporting detail — cognitive/behavioral decline</label><textarea id="risk5d" rows="2" placeholder="e.g., Daughter reports patient has become increasingly confused and forgetful over past 2 months, BIMS score 9/30 indicating moderate impairment"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-6" onclick="toggleSolo(this); buildNote();">6. History of difficulty complying with medical instructions in past 3 months</button>
+        </div>
+        <div class="fg" id="risk-6-detail" style="display:none;"><label>Supporting detail — noncompliance</label><textarea id="risk6d" rows="2" placeholder="e.g., Patient reports missing doses of Lasix due to cost; blood pressure medication not filled in 2 months per pharmacy record"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-7" onclick="toggleSolo(this); buildNote();">7. Currently taking 5 or more medications</button>
+        </div>
+        <div class="fg" id="risk-7-detail" style="display:none;"><label>Supporting detail — polypharmacy</label><textarea id="risk7d" rows="2" placeholder="e.g., Patient currently takes 8 medications: Metoprolol, Lisinopril, Furosemide, Metformin, Glipizide, Atorvastatin, Aspirin, Pantoprazole"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-8" onclick="toggleSolo(this); buildNote();">8. Currently reports exhaustion</button>
+        </div>
+        <div class="fg" id="risk-8-detail" style="display:none;"><label>Supporting detail — exhaustion</label><textarea id="risk8d" rows="2" placeholder="e.g., Patient reports feeling exhausted daily, tires after walking 10 feet to bathroom, requires rest after minimal exertion"></textarea></div>
+        <div class="fg">
+          <button type="button" class="chip" id="risk-9" onclick="toggleSolo(this); buildNote();">9. Other risk(s) not listed</button>
+        </div>
+        <div class="fg" id="risk-9-detail" style="display:none;"><label>Supporting detail — other risk</label><textarea id="risk9d" rows="2" placeholder="e.g., Patient lives alone with no caregiver support, hearing impaired, unable to hear phone or doorbell"></textarea></div>
+      </div>
+
+      <div class="sec" id="vsTitle">VISIT SUMMARY</div>
+      <div class="fg"><textarea id="visitSum" rows="4" placeholder="Visit summary (GHC also uses this for follow-up needs)"></textarea></div>
+
+      <div class="only-ghc">
+        <div class="sec">Representative &amp; admission</div>
+        <div class="cue">Click which applies. Unused sentence stays out of the copy.</div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-k="repType" data-v="legal" onclick="setChip(this)">Legally authorized representative</button>
+          <button type="button" class="chip" data-k="repType" data-v="selected" onclick="setChip(this)">Selected representative</button>
+        </div>
+        <div class="fg"><label>Representative name</label><input id="repName" placeholder="Name / relationship"></div>
+        <div class="fg"><label>Clinical Manager name</label><input id="clinMgr"></div>
+        <div class="fg"><label>Goals include</label><input id="goals" placeholder="Patient/rep goals"></div>
+        <button type="button" class="chip" id="repAbsent" onclick="toggleSolo(this); document.getElementById('absentBox').style.display = this.classList.contains('active') ? 'block' : 'none';">Representative was not present for the SOC</button>
+        <div id="absentBox" style="display:none;margin-top:10px;">
+          <div class="fg"><label>Copy of Patient Rights will be sent to</label><input id="rightsName"></div>
+          <div class="fg"><label>Address</label><input id="rightsAddr"></div>
+          <div class="row">
+            <div class="fg"><label>Phone number</label><input id="rightsPhone"></div>
+            <div class="fg"><label>Email</label><input id="rightsEmail"></div>
+          </div>
+        </div>
+        <div class="sec">SUPPLIES</div>
+        <div class="fg"><label>SUPPLIES</label><input id="supplies" placeholder="e.g., kerlex, tape"></div>
+      </div>
+
+      <!-- Education editor cards (shown when clicked on the right) -->
+      <div class="sec">Education added to this note</div>
+      <div id="eduHost"></div>
+
+      <div class="edu-card" id="card-gravity">
+        <h4>Gravity gtt</h4>
+        <div class="row">
+          <div class="fg"><label>Medication</label><input data-edu="g-med"></div>
+          <div class="fg"><label>Via (access)</label><input data-edu="g-via"></div>
+        </div>
+        <div class="row">
+          <div class="fg"><label>Over (infusion time)</label><input data-edu="g-over"></div>
+          <div class="fg"><label>q (frequency)</label><input data-edu="g-q"></div>
+        </div>
+      </div>
+      <div class="edu-card" id="card-ball">
+        <h4>Infuser ball</h4>
+        <div class="row">
+          <div class="fg"><label>Medication</label><input data-edu="b-med"></div>
+          <div class="fg"><label>Via</label><input data-edu="b-via"></div>
+        </div>
+        <div class="row">
+          <div class="fg"><label>Over</label><input data-edu="b-over"></div>
+          <div class="fg"><label>q</label><input data-edu="b-q"></div>
+        </div>
+      </div>
+      <div class="edu-card" id="card-tpn">
+        <h4>TPN</h4>
+        <div class="fg"><label>Set up primarily by</label><input data-edu="t-who"></div>
+        <div class="row">
+          <div class="fg"><label>TPN order ml every day</label><input data-edu="t-ml"></div>
+          <div class="fg"><label>Over (hours)</label><input data-edu="t-over"></div>
+        </div>
+        <button type="button" class="chip" data-opt="tInsulin" onclick="toggleSolo(this)">Add insulin to bag</button>
+        <div class="row" id="tInsRow" style="display:none;">
+          <div class="fg"><label>Units</label><input data-edu="t-iu"></div>
+          <div class="fg"><label>Insulin type</label><input data-edu="t-ins"></div>
+        </div>
+        <button type="button" class="chip" data-opt="tLumen" onclick="toggleSolo(this)">Other lumen flush</button>
+        <div class="fg" id="tLumRow" style="display:none;"><label>Flush other lumen ___ a day</label><input data-edu="t-lumen"></div>
+        <div class="fg"><label>Change IV tubing every</label><input data-edu="t-tubing"></div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-k="tMore" data-v="more" onclick="setChip(this)">Further teaching needed</button>
+          <button type="button" class="chip" data-k="tMore" data-v="none" onclick="setChip(this)">No further f/u teaching needed</button>
+        </div>
+        <div class="fg" id="tMoreRow" style="display:none;"><label>Further teaching on TPN set up at</label><input data-edu="t-moreat"></div>
+        <div class="fg"><label>Were/was able to verbalize</label>
+          <select data-edu="t-able"><option value="were">were able</option><option value="was">was able</option></select>
+        </div>
+        <div class="fg"><label>Plan to start next TPN infusion at</label><input data-edu="t-next" placeholder="time pm"></div>
+      </div>
+      <div class="edu-card" id="card-pump">
+        <h4>Tubing changes / pump</h4>
+        <div class="row">
+          <div class="fg"><label>Medication</label><input data-edu="p-med"></div>
+          <div class="fg"><label>Via</label><input data-edu="p-via"></div>
+        </div>
+        <div class="row">
+          <div class="fg"><label>Over</label><input data-edu="p-over"></div>
+          <div class="fg"><label>q</label><input data-edu="p-q"></div>
+        </div>
+      </div>
+      <div class="edu-card" id="card-ivp">
+        <h4>IV push</h4>
+        <div class="row">
+          <div class="fg"><label>Medication</label><input data-edu="i-med"></div>
+          <div class="fg"><label>Via</label><input data-edu="i-via"></div>
+        </div>
+        <div class="row">
+          <div class="fg"><label>IVP over</label><input data-edu="i-over"></div>
+          <div class="fg"><label>q</label><input data-edu="i-q"></div>
+        </div>
+      </div>
+      <div class="edu-card" id="card-labs">
+        <h4>Labs</h4>
+        <div class="row">
+          <div class="fg"><label>Labs drawn for</label><input data-edu="l-for"></div>
+          <div class="fg"><label>Via</label><input data-edu="l-via"></div>
+        </div>
+        <div class="row">
+          <div class="fg"><label>Last dose of</label><input data-edu="l-med"></div>
+          <div class="fg"><label>Given at</label><input data-edu="l-at"></div>
+          <div class="fg"><label>On (date)</label><input data-edu="l-on"></div>
+        </div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-opt="lUnable" onclick="toggleSolo(this)">Unable to draw labs from IV line</button>
+        </div>
+        <div class="fg"><label>Labs drawn peripherally x ___ attempt</label><input data-edu="l-periph"></div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-k="lSpec" data-v="nurse" onclick="setChip(this)">Specimens taken by nurse to lab</button>
+          <button type="button" class="chip" data-k="lSpec" data-v="courier" onclick="setChip(this)">Specimens sent with courier</button>
+        </div>
+      </div>
+      <div class="edu-card" id="card-picc">
+        <h4>PICC care</h4>
+        <div class="row">
+          <div class="fg"><label>External length (cm)</label><input data-edu="c-ext"></div>
+          <div class="fg"><label>Arm circumference (cm)</label><input data-edu="c-arm"></div>
+          <div class="fg"><label>Blood return</label><input data-edu="c-br"></div>
+        </div>
+      </div>
+
+      <div class="out-wrap">
+        <label style="font-size:13px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px;">Journal note — copy this</label>
+        <textarea id="output" readonly placeholder="Pick PCI or GHC, then fill blanks. The note builds here."></textarea>
+        <div class="btns">
+          <button type="button" class="btn" id="buildBtn" onclick="buildNote()">Build note</button>
+          <button type="button" class="btn green" id="copyBtn" onclick="copyNote()">Copy journal</button>
+          <button type="button" class="btn" onclick="selectOutput()">Select all text</button>
+        </div>
+      </div>
+      <div class="footer">Made for AZ Home Care  —  bettercharting.gumroad.com<br>Documentation support tool — review before signing. Follow agency policy and provider orders.</div>
+    </div>
+
+    <aside class="side">
+      <h3>Same-day checklist</h3>
+      <p style="margin-bottom:10px;">Does NOT copy into the journal — just a reminder. Check each item before you leave.</p>
+      <div class="only-pci">
+        <div class="chk"><input type="checkbox" id="chk-p1"><label for="chk-p1">Journal note completed</label></div>
+        <div class="chk"><input type="checkbox" id="chk-p2"><label for="chk-p2">Upload documents</label></div>
+        <div class="chk"><input type="checkbox" id="chk-p3"><label for="chk-p3">Order tab — physician order</label></div>
+        <div class="chk"><input type="checkbox" id="chk-p4"><label for="chk-p4">Medications entered, med review with med check</label></div>
+        <div class="chk"><input type="checkbox" id="chk-p5"><label for="chk-p5">Email staffing and CM for next visit needs</label></div>
+      </div>
+      <div class="only-ghc">
+        <div class="chk"><input type="checkbox" id="chk-g1"><label for="chk-g1">Journal note</label></div>
+        <div class="chk"><input type="checkbox" id="chk-g2"><label for="chk-g2">Upload documents</label></div>
+        <div class="chk"><input type="checkbox" id="chk-g3"><label for="chk-g3">Medications entered, med review with med check</label></div>
+        <div class="chk"><input type="checkbox" id="chk-g4"><label for="chk-g4">Email staffing and CM for next visit needs</label></div>
+        <div class="chk"><input type="checkbox" id="chk-g5"><label for="chk-g5">Email for GHC supplies</label></div>
+      </div>
+
+      <h3 style="margin-top:18px;">Click to add education</h3>
+      <p>Adds that teaching block with blanks only. Click again to remove it. Unclicked teaching does not copy.</p>
+      <button type="button" class="edu-btn" data-edu="gravity" onclick="toggleEdu('gravity', this)">1. Gravity gtt<span class="s">Bag/tubing q24h + NS/Heparin flush</span></button>
+      <button type="button" class="edu-btn" data-edu="ball" onclick="toggleEdu('ball', this)">2. Infuser ball<span class="s">Infuser ball + NS/Heparin flush</span></button>
+      <button type="button" class="edu-btn" data-edu="tpn" onclick="toggleEdu('tpn', this)">3. TPN<span class="s">TPN + PICC/Port/TAC + Sapphire</span></button>
+      <button type="button" class="edu-btn" data-edu="pump" onclick="toggleEdu('pump', this)">4. Tubing / pump<span class="s">Mon/Thu tubing + Sapphire</span></button>
+      <button type="button" class="edu-btn" data-edu="ivp" onclick="toggleEdu('ivp', this)">5. IV push<span class="s">IVP + NS/Heparin flush</span></button>
+      <button type="button" class="edu-btn" data-edu="labs" onclick="toggleEdu('labs', this)">6. Labs<span class="s">Draw, last dose, flush</span></button>
+      <button type="button" class="edu-btn" data-edu="picc" onclick="toggleEdu('picc', this)">7. PICC care<span class="s">Dressing, external length, circ</span></button>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){ var el=document.getElementById('jsOk'); if(el) el.style.display='block'; })();
+
+var pathVal = '';
+var chips = { erRisk: '', repType: '', tMore: '', lSpec: '' };
+var eduOn = { gravity:false, ball:false, tpn:false, pump:false, ivp:false, labs:false, picc:false };
+var flushNSH = 'Patient instructed on VAD flushed with NS 10 ml pre and post med using push-pause method and leaving 1 ml in the syringe. Final flush with 5 ml Heparin 100U/ml using the push-pause method and leaving 1 ml in the syringe.';
+
+function v(id){ var el=document.getElementById(id); return el ? el.value.trim() : ''; }
+function ev(key){ var el=document.querySelector('[data-edu="'+key+'"]'); return el ? el.value.trim() : ''; }
+function isOn(id){ var el=document.getElementById(id); return el && el.classList.contains('active'); }
+function optOn(name){ var el=document.querySelector('[data-opt="'+name+'"]'); return el && el.classList.contains('active'); }
+
+function setPath(p){
+  pathVal = p;
+  document.body.classList.remove('path-pci','path-ghc');
+  document.body.classList.add(p==='pci' ? 'path-pci' : 'path-ghc');
+  document.getElementById('btnPci').classList.toggle('active', p==='pci');
+  document.getElementById('btnGhc').classList.toggle('active', p==='ghc');
+  document.getElementById('work').classList.remove('locked');
+  document.getElementById('vsTitle').textContent = p==='ghc' ? 'VISIT SUMMARY/FOLLOW UP NEEDS' : 'VISIT SUMMARY';
+  document.getElementById('pathCue').textContent = 'Empty fields still copy their labels.';
+  buildNote();
+}
+
+function setChip(btn){
+  var k=btn.getAttribute('data-k'), val=btn.getAttribute('data-v');
+  chips[k]=val;
+  document.querySelectorAll('.chip[data-k="'+k+'"]').forEach(function(b){ b.classList.toggle('active', b===btn); });
+  if(k==='tMore'){ document.getElementById('tMoreRow').style.display = val==='more' ? 'block' : 'none'; }
+  buildNote();
+}
+function toggleSolo(btn){
+  btn.classList.toggle('active');
+  var id=btn.id;
+  if(btn.getAttribute('data-opt')==='tInsulin'){ document.getElementById('tInsRow').style.display = btn.classList.contains('active') ? 'flex' : 'none'; }
+  if(btn.getAttribute('data-opt')==='tLumen'){ document.getElementById('tLumRow').style.display = btn.classList.contains('active') ? 'block' : 'none'; }
+  // Risk factor detail boxes
+  if(id && id.indexOf('risk-')===0){
+    var det=document.getElementById(id+'-detail');
+    if(det) det.style.display = btn.classList.contains('active') ? 'block' : 'none';
+  }
+  buildNote();
+}
+function toggleEdu(name, btn){
+  eduOn[name]=!eduOn[name];
+  btn.classList.toggle('active', eduOn[name]);
+  document.getElementById('card-'+name).classList.toggle('on', eduOn[name]);
+  buildNote();
+}
+
+function line(label, value){ return label + ': ' + (value || ''); }
+
+function eduBlocks(){
+  var parts=[];
+  if(eduOn.gravity){
+    parts.push('Patient instructed on administration of '+ev('g-med')+' IV via '+ev('g-via')+' over '+ev('g-over')+' by gravity gtt q '+ev('g-q')+'. Patient instructed of aseptic tubing/bag changes to be done every 24 hours. '+flushNSH);
+  }
+  if(eduOn.ball){
+    parts.push('Patient instructed on administration of '+ev('b-med')+' IV via '+ev('b-via')+', using infuser ball over '+ev('b-over')+' q '+ev('b-q')+'. '+flushNSH);
+  }
+  if(eduOn.tpn){
+    var t='TPN will be set up for infusion primarily by '+ev('t-who')+'. TPN order is '+ev('t-ml')+'ml every day over '+ev('t-over')+'. Patient and caregiver instructed on TPN administration per TPN teaching tool, PICC Port TAC teaching tool, and Sapphire Pump teaching tool. Instructed to add Vitamins and Minerals';
+    if(optOn('tInsulin')) t+=' and '+ev('t-iu')+' units of '+ev('t-ins')+' Insulin';
+    t+=' to TPN bag prior to spiking bag. Patient and caregiver instructed to flush IV line with 10 ml Normal Saline prior to starting TPN and upon disconnect, flush with 20 ml of Normal saline using push-pause method leaving 1 ml of NS in the syringe and final flush of 5 ml Heparin 100 units/ml using push-pause method leaving 1 ml in the syringe.';
+    if(optOn('tLumen')) t+=' In order to maintain patency of other lumen, instructed to flush with 10 ml Normal Saline '+ev('t-lumen')+' a day using push-pause method and leaving 1 ml in the syringe and final flush of 5 ml Heparin 100 units/ml using push-pause method and leaving 1 ml in the syringe.';
+    t+=' Instructed patient/caregiver to change IV tubing every '+ev('t-tubing')+'.';
+    if(chips.tMore==='more') t+=' Patient/caregiver will need further teaching on TPN set up at '+ev('t-moreat')+'.';
+    var able=ev('t-able')||'were';
+    t+=' Post instructions, patient and caregiver '+able+' able to verbalize using teach-back method on how troubleshoot Sapphire pump, charge battery, set up TPN per order, flush line per protocol and when to call agency for assistance.';
+    if(chips.tMore==='none') t+=' No further f/u teaching on TPN administration needed.';
+    t+=' Patient and caregiver plan to start next TPN infusion at '+ev('t-next')+' pm.';
+    parts.push(t);
+  }
+  if(eduOn.pump){
+    parts.push('Patient instructed on administration of '+ev('p-med')+' IV via '+ev('p-via')+' over '+ev('p-over')+' q '+ev('p-q')+'. Patient instructed of aseptic tubing/bag changes to be done every 24 hours on Monday and Thursdays. '+flushNSH+' Patient instructed on troubleshooting Sapphire pump including battery charging, on/off, reset infusion, aseptic bag and tubing per pump teaching tool.');
+  }
+  if(eduOn.ivp){
+    parts.push('Patient instructed on administration of '+ev('i-med')+' IV via '+ev('i-via')+', IVP over '+ev('i-over')+' q '+ev('i-q')+'. '+flushNSH);
+  }
+  if(eduOn.labs){
+    var L='Labs drawn for '+ev('l-for')+' via '+ev('l-via')+'. Last dose of '+ev('l-med')+' was given at '+ev('l-at')+' on '+ev('l-on')+'.';
+    if(optOn('lUnable')) L+=' Unable to draw labs from IV line.';
+    if(ev('l-periph')) L+=' Labs drawn peripherally x '+ev('l-periph')+' attempt.';
+    if(chips.lSpec==='nurse') L+=' Specimens taken by nurse to lab for processing.';
+    if(chips.lSpec==='courier') L+=' Specimens sent with courier to drop off at lab.';
+    L+=' Line flushed with 10 ml NS pre lab draw and 20 ml NS post using push-pause method and leaving 1 ml in syringe. Final flush with 5 ml Heparin 100U/ml using push-pause method and leaving 1 ml in syringe.';
+    parts.push(L);
+  }
+  if(eduOn.picc){
+    parts.push('Site care dressing change per policy using aseptic technique, cleansed with Chloroprep, secured with Statlock, Silverlon disk applied and secured with tegaderm. External length '+ev('c-ext')+' cm and arm circumference '+ev('c-arm')+' cm. Blood return '+ev('c-br')+'.');
+  }
+  return parts;
+}
+
+function buildNote(){
+  if(!pathVal){ document.getElementById('output').value=''; return; }
+  var n=[];
+  n.push(line('SOC COMPLETED BY/DATE', v('socBy')));
+  n.push(line('CASE MANAGER', v('cm')));
+  if(pathVal==='pci') n.push(line('CERT PERIOD', v('certPeriod')));
+  n.push(line('FREQUENCY & DURATION', v('freq')));
+  if(pathVal==='ghc') n.push(line('HOSPITAL SELF RISK ASSESSMENT SCORE', v('hospRisk')));
+  n.push(line('OTHER CLINICIANS/FREQUENCY', v('otherClin')));
+  if(pathVal==='ghc') n.push('Patient is homebound because of '+v('homebound')+'.');
+  n.push(line('PHYSICIAN SIGNING ORDERS', v('mdSign')));
+  n.push(line('OTHER PHYSICIANS INVOLVED IN CARE', v('mdOther')));
+  n.push(line('DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN', v('mdAppt')));
+  n.push(line('DIAGNOSIS RELATED TO HOME CARE', v('dx')));
+  if(pathVal==='ghc') n.push((chips.erRisk||'') + ' RISK FOR ER VISITS AND READMISSION TO HOSPITAL');
+  n.push(line('IV ORDER', v('ivOrder')));
+  n.push(line('IV Medication', v('ivMed')));
+  n.push(line('Next dose due at', v('nextDose')));
+  n.push(line('DATE OF LAST DRESSING CHANGE', v('lastDress')));
+  n.push('LABS: '+v('labs')+'                DUE ON: '+v('labsDue'));
+  n.push(line('IMMEDIATE NEEDS', v('immNeed')));
+  var vad=line('VENOUS ACCESS DEVICE', v('vad'));
+  if(isOn('noTotalLen')) vad+=' Total length is not documented.';
+  n.push(vad);
+  if(pathVal==='ghc') n.push(line('VISIT SUMMARY/FOLLOW UP NEEDS', v('visitSum')));
+  else n.push(line('VISIT SUMMARY', v('visitSum')));
+  eduBlocks().forEach(function(p){ n.push(p); });
+  if(pathVal==='ghc'){
+    var rn=v('repName');
+    // Risk factor supporting details go into the visit summary
+    var riskParts=[];
+    var riskLabels=['1. History of falls (2+ falls or any fall with injury in past 12 months)','2. Unintentional weight loss of 10+ pounds in past 12 months','3. Multiple hospitalizations (2+ in past 6 months)','4. Multiple ED visits (2+ in past 6 months)','5. Decline in mental, emotional, or behavioral status in past 3 months','6. Difficulty complying with medical instructions in past 3 months','7. Currently taking 5 or more medications','8. Currently reports exhaustion','9. Other risk(s) not listed'];
+    for(var i=1;i<=9;i++){
+      if(isOn('risk-'+i)){
+        riskParts.push(riskLabels[i-1]+': '+v('risk'+i+'d'));
+      }
+    }
+    if(riskParts.length>0){
+      n.push('OASIS risk factors with supporting detail:');
+      riskParts.forEach(function(rp){ n.push(rp); });
+    }
+  }
+  if(pathVal==='ghc'){
+    var rn=v('repName');
+    if(chips.repType==='legal') n.push('Patient has legally authorized representative, '+rn+', and will be involved with their plan of care.');
+    if(chips.repType==='selected') n.push('Patient has selected '+rn+' as their representative and will be involved with their plan of care.');
+    n.push('Prior to provision of care, written admission information was given and discussed with Patient and '+rn+' outlined in the Patient Handbook which includes Patient Rights, Advanced Directives, Condition of Admission including benefit coverage, Disaster Preparedness Plan and Privacy Right in Regard to Shared Health Care Information. Patient and '+rn+' were given contact information for the agency Administrator for complaints, Community Health Complaint Hot Line telephone number along with our agency Triage phone number and coverage. Patient and '+rn+' have been given the name of their Clinical Manager '+v('clinMgr')+' and contact number and documented in patient home handbook.');
+    n.push('Goals developed with patient and '+rn+' to include '+v('goals')+' and in agreement with the plan of care.');
+    if(isOn('repAbsent')){
+      n.push("Patient's representative was not present for the SOC.");
+      n.push('Copy of Patient Rights will be sent to:');
+      n.push(v('rightsName'));
+      n.push('Address: '+v('rightsAddr'));
+      n.push('Phone number: '+v('rightsPhone'));
+      n.push('Email: '+v('rightsEmail'));
+    }
+    n.push(line('SUPPLIES', v('supplies')));
+  }
+  document.getElementById('output').value = n.join('\n\n');
+}
+
+function selectOutput(){
+  var o=document.getElementById('output');
+  o.focus(); o.select();
+  try { o.setSelectionRange(0, o.value.length); } catch(e){}
+}
+function showCopied(){
+  var b=document.getElementById('copyBtn');
+  b.classList.add('copied'); b.textContent='Copied!';
+  setTimeout(function(){ b.classList.remove('copied'); b.textContent='Copy journal'; }, 2000);
+}
+function copyNote(){
+  buildNote();
+  var text=document.getElementById('output').value;
+  if(!text) return;
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(showCopied).catch(function(){ fallbackCopy(text); });
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showCopied(); }
+  catch(e){ selectOutput(); alert('Select the note and copy it.'); }
+  document.body.removeChild(ta);
+}
+
+document.addEventListener('input', function(e){ if(e.target && e.target.id!=='output') buildNote(); });
+document.addEventListener('change', function(e){ if(e.target && e.target.id!=='output') buildNote(); });
+</script>
+</body>
+</html>
