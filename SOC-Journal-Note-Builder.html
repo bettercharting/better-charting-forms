@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SOC IV Journal — PCI / GHC | AZ Home Care</title>
+<title>SOC Journal Note Builder — PCI / GHC | AZ Home Care</title>
 <style>
   :root {
     --blue: #123b62; --blue-light: #eef7ff; --blue-border: #2f80c0;
-    --grey: #526070; --green: #2f8f4e;
+    --grey: #526070; --green: #2f8f4e; --green-bg: #eaf7ef; --green-border: #acd8bb;
     --pci: #c0392b; --pci-bg: #fdf0ee; --pci-border: #e8b8b2;
     --ghc: #123b62; --ghc-bg: #eef7ff; --ghc-border: #2f80c0;
     --orange-bg: #fff8ed; --orange-border: #f1d1a6; --orange-left: #d9822b;
@@ -19,7 +19,7 @@
   body { padding: 12px; }
 
   .noscript { background: #fff3cd; border: 2px solid #e0b000; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; color: #7a5c00; font-size: 14px; }
-  .js-ok { display: none; background: #eaf7ef; border: 1px solid #acd8bb; color: #226637; font-size: 12px; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px; }
+  .js-ok { display: none; background: var(--green-bg); border: 1px solid var(--green-border); color: #226637; font-size: 12px; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px; }
 
   .app { max-width: 1180px; margin: 0 auto; }
   .header { background: var(--blue); color: #fff; padding: 16px 20px; border-radius: 12px 12px 0 0; }
@@ -41,8 +41,6 @@
     .side { border-left: none; border-top: 1px solid var(--border); }
   }
 
-  .tag { display: none; }
-
   .only-pci, .only-ghc { display: none; }
   body.path-pci .only-pci { display: block; }
   body.path-ghc .only-ghc { display: block; }
@@ -51,25 +49,43 @@
   .locked { opacity: .45; pointer-events: none; }
   body.path-pci .locked, body.path-ghc .locked { opacity: 1; pointer-events: auto; }
 
-  .sec { font-size: 13px; font-weight: 700; color: var(--blue); margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--blue-light); }
+  .sec { font-size: 13px; font-weight: 700; color: var(--blue); margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--blue-light); }
+  .sec .sbar { font-size: 11px; font-weight: 400; color: var(--grey); margin-left: 8px; }
   .cue { background: var(--orange-bg); border: 1px solid var(--orange-border); border-left: 4px solid var(--orange-left); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #7a5c2a; margin: 0 0 10px; }
+  .cue b { color: var(--orange-left); }
+
   .fg { margin-bottom: 10px; }
   .fg label { display: block; font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
   .fg .hint { font-weight: 400; color: var(--grey); font-size: 11px; }
-  .fg input, .fg select, .fg textarea {
-    width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px;
-    color: #172033; background: #fff;
-  }
+  .fg input, .fg select, .fg textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; color: #172033; background: #fff; }
   .fg textarea { min-height: 64px; resize: vertical; }
+  .fg .hint-below { font-size: 11px; color: var(--grey); margin-top: 4px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .row .fg { flex: 1; min-width: 140px; }
+
+  .tpl-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .tpl-btn { flex: 1; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; text-align: left; font-size: 12px; font-weight: 600; color: var(--grey); }
+  .tpl-btn:hover { border-color: var(--blue-border); }
+  .tpl-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .tpl-btn .t-label { font-size: 14px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .tpl-btn .t-desc { font-size: 10px; font-weight: 400; color: var(--grey); }
+  .tpl-a-only { display: none; } .tpl-a-only.show { display: block; }
+  .tpl-b-only { display: none; } .tpl-b-only.show { display: block; }
+
+  .med-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .med-toggle-btn { flex: 1; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--grey); text-align: left; }
+  .med-toggle-btn:hover { border-color: var(--blue-border); }
+  .med-toggle-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .med-toggle-btn .mt-label { font-size: 13px; font-weight: 700; display: block; }
+  .med-toggle-btn .mt-desc { font-size: 10px; font-weight: 400; color: var(--grey); }
+  .med-fields { display: none; } .med-fields.show { display: block; }
 
   .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .chip { border: 2px solid var(--border); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--grey); }
   .chip.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
 
-  .edu-btn { width: 100%; text-align: left; border: 1.5px solid var(--border); background: #fff; border-radius: 8px; padding: 10px 10px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--blue); }
-  .edu-btn.active { border-color: var(--green); background: #eaf7ef; }
+  .edu-btn { width: 100%; text-align: left; border: 1.5px solid var(--border); background: #fff; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--blue); }
+  .edu-btn.active { border-color: var(--green); background: var(--green-bg); }
   .edu-btn .s { display: block; font-size: 10px; font-weight: 400; color: var(--grey); }
   .side h3 { font-size: 13px; color: var(--blue); margin-bottom: 8px; }
   .side p { font-size: 11px; color: var(--grey); margin-bottom: 10px; line-height: 1.45; }
@@ -77,12 +93,12 @@
   .chk input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; accent-color: var(--green); }
   .chk label { font-size: 12px; color: #2a3848; line-height: 1.4; }
 
-  .edu-card { display: none; border: 1.5px solid #cbe7d1; background: #f6fbf7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .edu-card { display: none; border: 1.5px solid var(--green-border); background: #f6fbf7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
   .edu-card.on { display: block; }
   .edu-card h4 { font-size: 13px; color: var(--green); margin-bottom: 8px; }
 
   .out-wrap { margin-top: 18px; }
-  #output { width: 100%; min-height: 220px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 8px; background: #f4f8fc; line-height: 1.55; }
+  #output { width: 100%; min-height: 280px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 8px; background: #f4f8fc; line-height: 1.55; }
   .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .btn { border: none; border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; color: #fff; background: var(--blue); }
   .btn.green { background: var(--green); }
@@ -97,7 +113,7 @@
 <div class="app">
   <div class="header">
     <h1>SOC Journal Note Builder</h1>
-    <div class="sub">PCI vs GHC — tab through blanks, click education to add it, copy the journal. Made for AZ Home Care.</div>
+    <div class="sub">PCI vs GHC — all-in-one: homebound statement + narrative + journal. One copy, one paste. Made for AZ Home Care.</div>
   </div>
 
   <div class="path-bar">
@@ -108,8 +124,9 @@
 
   <div class="layout locked" id="work">
     <div class="main">
-      <div class="cue" id="pathCue">Empty fields still copy their labels.</div>
+      <div class="cue" id="pathCue">Empty fields still copy their labels. Pick PCI or GHC to start.</div>
 
+      <!-- ===== SECTION 1: HEADER ===== -->
       <div class="sec">Visit header</div>
       <div class="row">
         <div class="fg"><label>SOC COMPLETED BY/DATE</label><input id="socBy" placeholder="Name / date"></div>
@@ -119,28 +136,52 @@
         <label>CERT PERIOD <span class="hint">— until end of therapy or up to 52 weeks</span></label>
         <input id="certPeriod" placeholder="e.g., until end of therapy / 52 weeks">
       </div>
-      <div class="fg">
-        <label>FREQUENCY &amp; DURATION <span class="hint only-ghc">— up to 9 weeks</span></label>
-        <input id="freq" placeholder="e.g., SN 2x/week x 3 weeks">
-      </div>
+      <div class="fg"><label>FREQUENCY &amp; DURATION <span class="hint only-ghc">— up to 9 weeks</span></label><input id="freq" placeholder="e.g., SN 2x/week x 3 weeks"></div>
       <div class="fg only-ghc">
         <label>HOSPITAL SELF RISK ASSESSMENT SCORE</label>
         <input id="hospRisk" placeholder="Score">
       </div>
       <div class="fg"><label>OTHER CLINICIANS/FREQUENCY</label><input id="otherClin" placeholder="e.g., PT 2x/wk, HHA 3x/wk"></div>
 
+      <!-- ===== SECTION 2: HOMEBOUND (GHC ONLY) ===== -->
       <div class="only-ghc">
-        <div class="sec">Homebound</div>
-        <div class="cue">Paint a picture: extra effort to leave, tired after being out, assistance needed to leave safely, or the medical restriction the doctor would advise. Do not repeat checked-box items.</div>
-        <div class="fg"><label>Patient is homebound because of</label><textarea id="homebound" rows="3" placeholder="Why leaving takes considerable and taxing effort, what help is needed, or the medical restriction"></textarea></div>
+        <div class="sec">Homebound statement <span class="sbar">— GHC only — pick A or B, fill blanks, it builds itself</span></div>
+        <div class="cue"><b>Template A:</b> Patient needs help/equipment to leave home (most patients). <b>Template B:</b> Leaving home is medically contraindicated.</div>
+        <div class="tpl-row">
+          <button type="button" class="tpl-btn active" id="tplA" onclick="setTpl('a')">
+            <span class="t-label">Template A</span>
+            <span class="t-desc">Needs help/equipment to leave home</span>
+          </button>
+          <button type="button" class="tpl-btn" id="tplB" onclick="setTpl('b')">
+            <span class="t-label">Template B</span>
+            <span class="t-desc">Leaving home is medically contraindicated</span>
+          </button>
+        </div>
+        <div class="fg"><label>Condition <span class="hint">— CHF, COPD, wound, dementia, CVA weakness, post-op, infection, deconditioning, diabetes complication</span></label><input id="hb-condition" placeholder="e.g., CHF exacerbation"></div>
+        <div class="fg"><label>Limitation <span class="hint">— what the patient cannot safely/routinely do</span></label><input id="hb-limitation" placeholder="e.g., decreased endurance and shortness of breath with minimal exertion"></div>
+        <div class="tpl-a-only show" id="tplA-fields">
+          <div class="fg"><label>Needs to leave <span class="hint">— walker, wheelchair, cane, hands-on assist, caregiver help, medical transport</span></label><input id="hb-needs" placeholder="e.g., walker use and assistance of another person"></div>
+          <div class="fg"><label>Why unsafe <span class="hint">— what could go wrong without support</span></label><input id="hb-why" placeholder="e.g., dyspnea, weakness, and fall risk"></div>
+        </div>
+        <div class="tpl-b-only" id="tplB-fields">
+          <div class="fg"><label>Medical risk + facts <span class="hint">— specific medical risk created by leaving home</span></label><input id="hb-risk" placeholder="e.g., travel requires transfers that place pressure on the wound"></div>
+          <div class="fg"><label>Consequence or restriction <span class="hint">— what leaving would cause or violate</span></label><input id="hb-consequence" placeholder="e.g., worsening wound status"></div>
+        </div>
+        <div class="fg"><label>Taxing proof <span class="hint">— what happens + help needed + rest/recovery required</span></label><input id="hb-taxing" placeholder="e.g., SOB after walking 10–15 feet despite O2, seated rest breaks, increased fatigue"></div>
+        <div class="fg"><label>Skilled need <span class="hint">— wound care, cardiopulmonary assessment, med teaching, IV care, etc.</span></label>
+          <input id="hb-skilled" placeholder="e.g., cardiopulmonary assessment, medication teaching, and symptom monitoring">
+          <div class="hint-below">Discipline: <select id="hb-discipline"><option value="nursing">nursing</option><option value="therapy">therapy</option><option value="nursing/therapy">nursing/therapy</option></select></div>
+        </div>
       </div>
 
+      <!-- ===== SECTION 3: PHYSICIANS & DIAGNOSIS ===== -->
       <div class="sec">Physicians &amp; diagnosis</div>
       <div class="fg"><label>PHYSICIAN SIGNING ORDERS</label><input id="mdSign"></div>
       <div class="fg"><label>OTHER PHYSICIANS INVOLVED IN CARE</label><input id="mdOther"></div>
       <div class="fg"><label>DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN</label><input id="mdAppt" placeholder="Date — which physician"></div>
       <div class="fg"><label>DIAGNOSIS RELATED TO HOME CARE</label><input id="dx"></div>
 
+      <!-- ===== SECTION 4: ER / READMIT RISK (GHC) ===== -->
       <div class="only-ghc">
         <div class="sec">ER / readmit risk</div>
         <div class="chip-row">
@@ -150,19 +191,20 @@
         </div>
       </div>
 
+      <!-- ===== SECTION 5: IV / ACCESS / LABS ===== -->
       <div class="sec">IV / access / labs</div>
       <div class="only-ghc" style="margin-bottom:10px;">
         <button type="button" class="chip" id="noIvGhc" onclick="toggleNoIv(this)">No IV orders for this GHC</button>
       </div>
       <div id="ivBlock">
-      <div class="fg"><label>IV ORDER</label><input id="ivOrder"></div>
-      <div class="fg"><label>IV Medication <span class="hint">— F/U teach, what med?</span></label><input id="ivMed"></div>
-      <div class="fg"><label>Next dose due at</label><input id="nextDose" placeholder="00:00 AM / 00:00 PM"></div>
-      <div class="fg"><label>DATE OF LAST DRESSING CHANGE</label><input id="lastDress"></div>
-      <div class="row">
-        <div class="fg"><label>LABS</label><input id="labs"></div>
-        <div class="fg"><label>DUE ON</label><input id="labsDue"></div>
-      </div>
+        <div class="fg"><label>IV ORDER</label><input id="ivOrder"></div>
+        <div class="fg"><label>IV Medication <span class="hint">— F/U teach, what med?</span></label><input id="ivMed"></div>
+        <div class="fg"><label>Next dose due at</label><input id="nextDose" placeholder="00:00 AM / 00:00 PM"></div>
+        <div class="fg"><label>DATE OF LAST DRESSING CHANGE</label><input id="lastDress"></div>
+        <div class="row">
+          <div class="fg"><label>LABS</label><input id="labs"></div>
+          <div class="fg"><label>DUE ON</label><input id="labsDue"></div>
+        </div>
       </div>
       <div class="fg"><label>IMMEDIATE NEEDS</label><textarea id="immNeed" rows="2"></textarea></div>
       <div class="fg"><label>VENOUS ACCESS DEVICE <span class="hint">— type, insertion date, total length, external length, blood return</span></label>
@@ -172,111 +214,122 @@
         <button type="button" class="chip" id="noTotalLen" onclick="toggleSolo(this)">Total length is not documented</button>
       </div>
 
-      <div class="only-ghc">
-        <div class="sec">OASIS risk factors — click yes to add supporting detail</div>
-        <div class="cue">If you check any of these in the OASIS, your note must have supporting detail. Click the ones that apply — each adds a prompt line for your detail into the visit summary.</div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-1" onclick="toggleSolo(this); buildNote();">1. History of falls (2+ falls or any fall with injury in past 12 months)</button>
-        </div>
-        <div class="fg" id="risk-1-detail" style="display:none;"><label>Supporting detail — falls</label><textarea id="risk1d" rows="2" placeholder="e.g., Patient reports 3 falls in past 8 months, most recent fall at home resulting in ER visit for right hip contusion"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-2" onclick="toggleSolo(this); buildNote();">2. Unintentional weight loss of 10+ pounds in past 12 months</button>
-        </div>
-        <div class="fg" id="risk-2-detail" style="display:none;"><label>Supporting detail — weight loss</label><textarea id="risk2d" rows="2" placeholder="e.g., Patient reports unintentional 12 lb weight loss over past 6 months, from 165 lb to 153 lb. Reports poor appetite"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-3" onclick="toggleSolo(this); buildNote();">3. Multiple hospitalizations (2+ in past 6 months)</button>
-        </div>
-        <div class="fg" id="risk-3-detail" style="display:none;"><label>Supporting detail — hospitalizations</label><textarea id="risk3d" rows="2" placeholder="e.g., Patient hospitalized 3 times in past 4 months for CHF exacerbation — most recent discharge 8/15/26"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-4" onclick="toggleSolo(this); buildNote();">4. Multiple ED visits (2+ in past 6 months)</button>
-        </div>
-        <div class="fg" id="risk-4-detail" style="display:none;"><label>Supporting detail — ED visits</label><textarea id="risk4d" rows="2" placeholder="e.g., Patient reports 2 ER visits in past 3 months for shortness of breath, treated with nebulizer and discharged home"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-5" onclick="toggleSolo(this); buildNote();">5. Decline in mental, emotional, or behavioral status in past 3 months</button>
-        </div>
-        <div class="fg" id="risk-5-detail" style="display:none;"><label>Supporting detail — cognitive/behavioral decline</label><textarea id="risk5d" rows="2" placeholder="e.g., Daughter reports patient has become increasingly confused and forgetful over past 2 months, BIMS score 9/30 indicating moderate impairment"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-6" onclick="toggleSolo(this); buildNote();">6. History of difficulty complying with medical instructions in past 3 months</button>
-        </div>
-        <div class="fg" id="risk-6-detail" style="display:none;"><label>Supporting detail — noncompliance</label><textarea id="risk6d" rows="2" placeholder="e.g., Patient reports missing doses of Lasix due to cost; blood pressure medication not filled in 2 months per pharmacy record"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-7" onclick="toggleSolo(this); buildNote();">7. Currently taking 5 or more medications</button>
-        </div>
-        <div class="fg" id="risk-7-detail" style="display:none;"><label>Supporting detail — polypharmacy</label><textarea id="risk7d" rows="2" placeholder="e.g., Patient currently takes 8 medications: Metoprolol, Lisinopril, Furosemide, Metformin, Glipizide, Atorvastatin, Aspirin, Pantoprazole"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-8" onclick="toggleSolo(this); buildNote();">8. Currently reports exhaustion</button>
-        </div>
-        <div class="fg" id="risk-8-detail" style="display:none;"><label>Supporting detail — exhaustion</label><textarea id="risk8d" rows="2" placeholder="e.g., Patient reports feeling exhausted daily, tires after walking 10 feet to bathroom, requires rest after minimal exertion"></textarea></div>
-        <div class="fg">
-          <button type="button" class="chip" id="risk-9" onclick="toggleSolo(this); buildNote();">9. Other risk(s) not listed</button>
-        </div>
-        <div class="fg" id="risk-9-detail" style="display:none;"><label>Supporting detail — other risk</label><textarea id="risk9d" rows="2" placeholder="e.g., Patient lives alone with no caregiver support, hearing impaired, unable to hear phone or doorbell"></textarea></div>
+      <!-- ===== SECTION 6: NARRATIVE (Advance care plan + SBAR) ===== -->
+      <div class="sec">Narrative <span class="sbar">— advance care plan + SBAR — fills in after the structured fields</span></div>
+
+      <!-- Advance care plan opening -->
+      <div class="fg"><label>Representative <span class="hint">— who was present (spouse, daughter, son, caregiver, etc.)</span></label><input id="rep-narr" placeholder="e.g., spouse / daughter / caregiver"></div>
+      <div class="fg"><label>Pronoun <span class="hint">— his / her / their</span></label>
+        <select id="pronoun"><option value="their">their</option><option value="his">his</option><option value="her">her</option></select>
+      </div>
+      <div class="fg"><label>Patient/caregiver goal <span class="hint">— what does the patient want to achieve?</span></label><input id="goal" placeholder="e.g., remain safely at home, return to prior level of function, manage medications independently"></div>
+
+      <!-- Med education toggle -->
+      <div class="med-toggle">
+        <button type="button" class="med-toggle-btn active" id="btn-taught" onclick="setMedMode('taught')">
+          <span class="mt-label">Teaching provided</span>
+          <span class="mt-desc">Patient/caregiver was educated on high-risk med(s)</span>
+        </button>
+        <button type="button" class="med-toggle-btn" id="btn-knowledgeable" onclick="setMedMode('knowledgeable')">
+          <span class="mt-label">Already knowledgeable</span>
+          <span class="mt-desc">Patient/caregiver is 100% knowledgeable</span>
+        </button>
+      </div>
+      <div class="med-fields show" id="med-taught">
+        <div class="fg"><label>Who was taught <span class="hint">— patient, caregiver (name/relationship), or both</span></label><input id="taught-who" placeholder="e.g., patient and daughter"></div>
+        <div class="fg"><label>High-risk med(s) <span class="hint">— anticoagulants, insulin, opioids, antibiotics, etc.</span></label><input id="taught-med" placeholder="e.g., Warfarin and Insulin"></div>
+        <div class="fg"><label>Side effects taught <span class="hint">— what side effects did you teach?</span></label><input id="taught-sides" placeholder="e.g., bleeding precautions and hypoglycemia signs"></div>
+      </div>
+      <div class="med-fields" id="med-knowledgeable">
+        <div class="fg"><label>Who is knowledgeable <span class="hint">— patient, caregiver (name/relationship), or both</span></label><input id="know-who" placeholder="e.g., patient and daughter"></div>
+        <div class="fg"><label>High-risk med(s) <span class="hint">— list the high-risk meds they demonstrated knowledge of</span></label><input id="know-med" placeholder="e.g., Warfarin and Insulin"></div>
       </div>
 
+      <!-- Situation -->
+      <div class="sec">Situation <span class="sbar">— where, who was present</span></div>
+      <div class="fg"><label>Setting &amp; who was present <span class="hint">— home, SNF, ALF, etc. and who was there</span></label>
+        <textarea id="situation" rows="2" placeholder="e.g., Home visit conducted at patient's home. Patient's daughter and home health aide present."></textarea>
+      </div>
+
+      <!-- Background -->
+      <div class="sec">Background <span class="sbar">— hospitalization, discharge, events</span></div>
+      <div class="row">
+        <div class="fg"><label>Discharge date</label><input id="dc-date" placeholder="e.g., 8/15/26"></div>
+        <div class="fg"><label>Length of stay <span class="hint">— days in hospital</span></label><input id="los" placeholder="e.g., 5 days"></div>
+      </div>
+      <div class="fg"><label>Reason for admission <span class="hint">— brief history of why they were hospitalized</span></label>
+        <textarea id="admit-reason" rows="2" placeholder="e.g., admitted for CHF exacerbation with worsening SOB and lower extremity edema"></textarea>
+      </div>
+      <div class="fg"><label>Significant inpatient events <span class="hint">— procedures, complications, changes during hospital stay</span></label>
+        <textarea id="inpatient-events" rows="2" placeholder="e.g., required IV diuretics, had PICC line placed for IV antibiotics, received 2 units PRBC"></textarea>
+      </div>
+
+      <!-- Pertinent history -->
+      <div class="sec">Pertinent history <span class="sbar">— how it influences current situation</span></div>
+      <div class="fg"><label>Pertinent history <span class="hint">— PMH/PSH and how it currently affects the patient</span></label>
+        <textarea id="pertinent-hx" rows="2" placeholder="e.g., History of CHF, diabetes, and prior CVA with residual left-sided weakness. Currently non-weight-bearing on left leg due to diabetic foot wound, which limits mobility and increases fall risk."></textarea>
+      </div>
+
+      <!-- Assessment -->
+      <div class="sec">Assessment <span class="sbar">— outliers and notable findings</span></div>
+      <div class="fg"><label>Assessment outliers <span class="hint">— abnormal findings, vitals, wound, pain, functional limits</span></label>
+        <textarea id="assessment" rows="3" placeholder="e.g., Vital signs: BP 148/92, HR 88, RR 20, SpO2 92% on room air. Patient is HOH, requires caregiver to ambulate safely with walker. Wound: 2.5cm x 2cm sacral pressure injury, partial thickness, moderate drainage. Pain: 3/10 at rest, 7/10 with ambulation."></textarea>
+      </div>
+
+      <!-- Plan -->
+      <div class="sec">Plan <span class="sbar">— care plan and next visit</span></div>
+      <div class="fg"><label>Plan of care <span class="hint">— what will be done, referrals, orders</span></label>
+        <textarea id="plan" rows="2" placeholder="e.g., Will continue skilled nursing for wound care 2x/week, medication management, and cardiopulmonary assessment. PT consulted for gait training and fall risk reduction. MD notified of BP and wound findings."></textarea>
+      </div>
+      <div class="fg"><label>Next visit <span class="hint">— date and which nurse is scheduled</span></label><input id="next-visit" placeholder="e.g., 8/22/26 with RN Katie"></div>
+
+      <!-- ===== SECTION 7: VISIT SUMMARY ===== -->
       <div class="sec" id="vsTitle">VISIT SUMMARY</div>
       <div class="fg"><textarea id="visitSum" rows="4" placeholder="Visit summary (GHC also uses this for follow-up needs)"></textarea></div>
 
+      <!-- ===== SECTION 8: OASIS RISK FACTORS (GHC) ===== -->
       <div class="only-ghc">
-        <div class="sec">Representative &amp; admission</div>
-        <div class="cue">Click which applies. Unused sentence stays out of the copy.</div>
-        <div class="chip-row">
-          <button type="button" class="chip" data-k="repType" data-v="legal" onclick="setChip(this)">Legally authorized representative</button>
-          <button type="button" class="chip" data-k="repType" data-v="selected" onclick="setChip(this)">Selected representative</button>
-        </div>
-        <div class="fg"><label>Representative name</label><input id="repName" placeholder="Name / relationship"></div>
-        <div class="fg"><label>Clinical Manager name</label><input id="clinMgr"></div>
-        <div class="fg"><label>Goals include</label><input id="goals" placeholder="Patient/rep goals"></div>
-        <button type="button" class="chip" id="repAbsent" onclick="toggleSolo(this); document.getElementById('absentBox').style.display = this.classList.contains('active') ? 'block' : 'none';">Representative was not present for the SOC</button>
-        <div id="absentBox" style="display:none;margin-top:10px;">
-          <div class="fg"><label>Copy of Patient Rights will be sent to</label><input id="rightsName"></div>
-          <div class="fg"><label>Address</label><input id="rightsAddr"></div>
-          <div class="row">
-            <div class="fg"><label>Phone number</label><input id="rightsPhone"></div>
-            <div class="fg"><label>Email</label><input id="rightsEmail"></div>
-          </div>
-        </div>
-        <div class="sec">SUPPLIES</div>
-        <div class="fg"><label>SUPPLIES</label><input id="supplies" placeholder="e.g., kerlex, tape"></div>
+        <div class="sec">OASIS risk factors — click yes to add supporting detail</div>
+        <div class="cue">If you check any of these in the OASIS, your note must have supporting detail. Click the ones that apply — each adds a prompt line for your detail into the visit summary.</div>
+        <div class="fg"><button type="button" class="chip" id="risk-1" onclick="toggleSolo(this); buildNote();">1. History of falls (2+ falls or any fall with injury in past 12 months)</button></div>
+        <div class="fg" id="risk-1-detail" style="display:none;"><label>Supporting detail — falls</label><textarea id="risk1d" rows="2" placeholder="e.g., Patient reports 3 falls in past 8 months, most recent fall at home resulting in ER visit for right hip contusion"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-2" onclick="toggleSolo(this); buildNote();">2. Unintentional weight loss of 10+ pounds in past 12 months</button></div>
+        <div class="fg" id="risk-2-detail" style="display:none;"><label>Supporting detail — weight loss</label><textarea id="risk2d" rows="2" placeholder="e.g., Patient reports unintentional 12 lb weight loss over past 6 months, from 165 lb to 153 lb"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-3" onclick="toggleSolo(this); buildNote();">3. Multiple hospitalizations (2+ in past 6 months)</button></div>
+        <div class="fg" id="risk-3-detail" style="display:none;"><label>Supporting detail — hospitalizations</label><textarea id="risk3d" rows="2" placeholder="e.g., Patient hospitalized 3 times in past 4 months for CHF exacerbation — most recent discharge 8/15/26"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-4" onclick="toggleSolo(this); buildNote();">4. Multiple ED visits (2+ in past 6 months)</button></div>
+        <div class="fg" id="risk-4-detail" style="display:none;"><label>Supporting detail — ED visits</label><textarea id="risk4d" rows="2" placeholder="e.g., Patient reports 2 ER visits in past 3 months for shortness of breath"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-5" onclick="toggleSolo(this); buildNote();">5. Decline in mental, emotional, or behavioral status in past 3 months</button></div>
+        <div class="fg" id="risk-5-detail" style="display:none;"><label>Supporting detail — cognitive/behavioral decline</label><textarea id="risk5d" rows="2" placeholder="e.g., Daughter reports patient has become increasingly confused and forgetful over past 2 months, BIMS score 9/30"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-6" onclick="toggleSolo(this); buildNote();">6. History of difficulty complying with medical instructions in past 3 months</button></div>
+        <div class="fg" id="risk-6-detail" style="display:none;"><label>Supporting detail — noncompliance</label><textarea id="risk6d" rows="2" placeholder="e.g., Patient reports missing doses of Lasix due to cost; blood pressure medication not filled in 2 months"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-7" onclick="toggleSolo(this); buildNote();">7. Currently taking 5 or more medications</button></div>
+        <div class="fg" id="risk-7-detail" style="display:none;"><label>Supporting detail — polypharmacy</label><textarea id="risk7d" rows="2" placeholder="e.g., Patient currently takes 8 medications: Metoprolol, Lisinopril, Furosemide, Metformin, Glipizide, Atorvastatin, Aspirin, Pantoprazole"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-8" onclick="toggleSolo(this); buildNote();">8. Currently reports exhaustion</button></div>
+        <div class="fg" id="risk-8-detail" style="display:none;"><label>Supporting detail — exhaustion</label><textarea id="risk8d" rows="2" placeholder="e.g., Patient reports feeling exhausted daily, tires after walking 10 feet to bathroom"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-9" onclick="toggleSolo(this); buildNote();">9. Other risk(s) not listed</button></div>
+        <div class="fg" id="risk-9-detail" style="display:none;"><label>Supporting detail — other risk</label><textarea id="risk9d" rows="2" placeholder="e.g., Patient lives alone with no caregiver support, hearing impaired"></textarea></div>
       </div>
 
-      <!-- Education editor cards (shown when clicked on the right) -->
+      <!-- ===== SECTION 9: EDUCATION BLOCKS ===== -->
       <div class="sec">Education added to this note</div>
       <div id="eduHost"></div>
-
       <div class="edu-card" id="card-gravity">
         <h4>Gravity gtt</h4>
-        <div class="row">
-          <div class="fg"><label>Medication</label><input data-edu="g-med"></div>
-          <div class="fg"><label>Via (access)</label><input data-edu="g-via"></div>
-        </div>
-        <div class="row">
-          <div class="fg"><label>Over (infusion time)</label><input data-edu="g-over"></div>
-          <div class="fg"><label>q (frequency)</label><input data-edu="g-q"></div>
-        </div>
+        <div class="row"><div class="fg"><label>Medication</label><input data-edu="g-med"></div><div class="fg"><label>Via (access)</label><input data-edu="g-via"></div></div>
+        <div class="row"><div class="fg"><label>Over (infusion time)</label><input data-edu="g-over"></div><div class="fg"><label>q (frequency)</label><input data-edu="g-q"></div></div>
       </div>
       <div class="edu-card" id="card-ball">
         <h4>Infuser ball</h4>
-        <div class="row">
-          <div class="fg"><label>Medication</label><input data-edu="b-med"></div>
-          <div class="fg"><label>Via</label><input data-edu="b-via"></div>
-        </div>
-        <div class="row">
-          <div class="fg"><label>Over</label><input data-edu="b-over"></div>
-          <div class="fg"><label>q</label><input data-edu="b-q"></div>
-        </div>
+        <div class="row"><div class="fg"><label>Medication</label><input data-edu="b-med"></div><div class="fg"><label>Via</label><input data-edu="b-via"></div></div>
+        <div class="row"><div class="fg"><label>Over</label><input data-edu="b-over"></div><div class="fg"><label>q</label><input data-edu="b-q"></div></div>
       </div>
       <div class="edu-card" id="card-tpn">
         <h4>TPN</h4>
         <div class="fg"><label>Set up primarily by</label><input data-edu="t-who"></div>
-        <div class="row">
-          <div class="fg"><label>TPN order ml every day</label><input data-edu="t-ml"></div>
-          <div class="fg"><label>Over (hours)</label><input data-edu="t-over"></div>
-        </div>
+        <div class="row"><div class="fg"><label>TPN order ml every day</label><input data-edu="t-ml"></div><div class="fg"><label>Over (hours)</label><input data-edu="t-over"></div></div>
         <button type="button" class="chip" data-opt="tInsulin" onclick="toggleSolo(this)">Add insulin to bag</button>
-        <div class="row" id="tInsRow" style="display:none;">
-          <div class="fg"><label>Units</label><input data-edu="t-iu"></div>
-          <div class="fg"><label>Insulin type</label><input data-edu="t-ins"></div>
-        </div>
+        <div class="row" id="tInsRow" style="display:none;"><div class="fg"><label>Units</label><input data-edu="t-iu"></div><div class="fg"><label>Insulin type</label><input data-edu="t-ins"></div></div>
         <button type="button" class="chip" data-opt="tLumen" onclick="toggleSolo(this)">Other lumen flush</button>
         <div class="fg" id="tLumRow" style="display:none;"><label>Flush other lumen ___ a day</label><input data-edu="t-lumen"></div>
         <div class="fg"><label>Change IV tubing every</label><input data-edu="t-tubing"></div>
@@ -292,40 +345,19 @@
       </div>
       <div class="edu-card" id="card-pump">
         <h4>Tubing changes / pump</h4>
-        <div class="row">
-          <div class="fg"><label>Medication</label><input data-edu="p-med"></div>
-          <div class="fg"><label>Via</label><input data-edu="p-via"></div>
-        </div>
-        <div class="row">
-          <div class="fg"><label>Over</label><input data-edu="p-over"></div>
-          <div class="fg"><label>q</label><input data-edu="p-q"></div>
-        </div>
+        <div class="row"><div class="fg"><label>Medication</label><input data-edu="p-med"></div><div class="fg"><label>Via</label><input data-edu="p-via"></div></div>
+        <div class="row"><div class="fg"><label>Over</label><input data-edu="p-over"></div><div class="fg"><label>q</label><input data-edu="p-q"></div></div>
       </div>
       <div class="edu-card" id="card-ivp">
         <h4>IV push</h4>
-        <div class="row">
-          <div class="fg"><label>Medication</label><input data-edu="i-med"></div>
-          <div class="fg"><label>Via</label><input data-edu="i-via"></div>
-        </div>
-        <div class="row">
-          <div class="fg"><label>IVP over</label><input data-edu="i-over"></div>
-          <div class="fg"><label>q</label><input data-edu="i-q"></div>
-        </div>
+        <div class="row"><div class="fg"><label>Medication</label><input data-edu="i-med"></div><div class="fg"><label>Via</label><input data-edu="i-via"></div></div>
+        <div class="row"><div class="fg"><label>IVP over</label><input data-edu="i-over"></div><div class="fg"><label>q</label><input data-edu="i-q"></div></div>
       </div>
       <div class="edu-card" id="card-labs">
         <h4>Labs</h4>
-        <div class="row">
-          <div class="fg"><label>Labs drawn for</label><input data-edu="l-for"></div>
-          <div class="fg"><label>Via</label><input data-edu="l-via"></div>
-        </div>
-        <div class="row">
-          <div class="fg"><label>Last dose of</label><input data-edu="l-med"></div>
-          <div class="fg"><label>Given at</label><input data-edu="l-at"></div>
-          <div class="fg"><label>On (date)</label><input data-edu="l-on"></div>
-        </div>
-        <div class="chip-row">
-          <button type="button" class="chip" data-opt="lUnable" onclick="toggleSolo(this)">Unable to draw labs from IV line</button>
-        </div>
+        <div class="row"><div class="fg"><label>Labs drawn for</label><input data-edu="l-for"></div><div class="fg"><label>Via</label><input data-edu="l-via"></div></div>
+        <div class="row"><div class="fg"><label>Last dose of</label><input data-edu="l-med"></div><div class="fg"><label>Given at</label><input data-edu="l-at"></div><div class="fg"><label>On (date)</label><input data-edu="l-on"></div></div>
+        <button type="button" class="chip" data-opt="lUnable" onclick="toggleSolo(this)">Unable to draw labs from IV line</button>
         <div class="fg"><label>Labs drawn peripherally x ___ attempt</label><input data-edu="l-periph"></div>
         <div class="chip-row">
           <button type="button" class="chip" data-k="lSpec" data-v="nurse" onclick="setChip(this)">Specimens taken by nurse to lab</button>
@@ -334,16 +366,35 @@
       </div>
       <div class="edu-card" id="card-picc">
         <h4>PICC care</h4>
-        <div class="row">
-          <div class="fg"><label>External length (cm)</label><input data-edu="c-ext"></div>
-          <div class="fg"><label>Arm circumference (cm)</label><input data-edu="c-arm"></div>
-          <div class="fg"><label>Blood return</label><input data-edu="c-br"></div>
-        </div>
+        <div class="row"><div class="fg"><label>External length (cm)</label><input data-edu="c-ext"></div><div class="fg"><label>Arm circumference (cm)</label><input data-edu="c-arm"></div></div>
+        <div class="fg"><label>Blood return</label><input data-edu="c-br"></div>
       </div>
 
+      <!-- ===== SECTION 10: REPRESENTATIVE & ADMISSION (GHC) ===== -->
+      <div class="only-ghc">
+        <div class="sec">Representative &amp; admission</div>
+        <div class="cue">Click which applies. Unused sentence stays out of the copy.</div>
+        <div class="chip-row">
+          <button type="button" class="chip" data-k="repType" data-v="legal" onclick="setChip(this)">Legally authorized representative</button>
+          <button type="button" class="chip" data-k="repType" data-v="selected" onclick="setChip(this)">Selected representative</button>
+        </div>
+        <div class="fg"><label>Representative name</label><input id="repName" placeholder="Name / relationship"></div>
+        <div class="fg"><label>Clinical Manager name</label><input id="clinMgr"></div>
+        <div class="fg"><label>Goals include</label><input id="goals" placeholder="Patient/rep goals"></div>
+        <button type="button" class="chip" id="repAbsent" onclick="toggleSolo(this); document.getElementById('absentBox').style.display = this.classList.contains('active') ? 'block' : 'none';">Representative was not present for the SOC</button>
+        <div id="absentBox" style="display:none;margin-top:10px;">
+          <div class="fg"><label>Copy of Patient Rights will be sent to</label><input id="rightsName"></div>
+          <div class="fg"><label>Address</label><input id="rightsAddr"></div>
+          <div class="row"><div class="fg"><label>Phone number</label><input id="rightsPhone"></div><div class="fg"><label>Email</label><input id="rightsEmail"></div></div>
+        </div>
+        <div class="sec">SUPPLIES</div>
+        <div class="fg"><label>SUPPLIES</label><input id="supplies" placeholder="e.g., kerlex, tape"></div>
+      </div>
+
+      <!-- ===== OUTPUT ===== -->
       <div class="out-wrap">
-        <label style="font-size:13px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px;">Journal note — copy this</label>
-        <textarea id="output" readonly placeholder="Pick PCI or GHC, then fill blanks. The note builds here."></textarea>
+        <label style="font-size:13px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px;">Complete journal note — copy this</label>
+        <textarea id="output" readonly placeholder="Pick PCI or GHC, then fill blanks. The note builds here — homebound statement + narrative + journal all in one."></textarea>
         <div class="btns">
           <button type="button" class="btn" id="buildBtn" onclick="buildNote()">Build note</button>
           <button type="button" class="btn green" id="copyBtn" onclick="copyNote()">Copy journal</button>
@@ -353,6 +404,7 @@
       <div class="footer">Made for AZ Home Care  —  bettercharting.gumroad.com<br>Documentation support tool — review before signing. Follow agency policy and provider orders.</div>
     </div>
 
+    <!-- ===== SIDEBAR ===== -->
     <aside class="side">
       <h3>Same-day checklist</h3>
       <p style="margin-bottom:10px;">Does NOT copy into the journal — just a reminder. Check each item before you leave.</p>
@@ -388,6 +440,8 @@
 (function(){ var el=document.getElementById('jsOk'); if(el) el.style.display='block'; })();
 
 var pathVal = '';
+var tplVal = 'a';
+var medMode = 'taught';
 var chips = { erRisk: '', repType: '', tMore: '', lSpec: '' };
 var eduOn = { gravity:false, ball:false, tpn:false, pump:false, ivp:false, labs:false, picc:false };
 var flushNSH = 'Patient instructed on VAD flushed with NS 10 ml pre and post med using push-pause method and leaving 1 ml in the syringe. Final flush with 5 ml Heparin 100U/ml using the push-pause method and leaving 1 ml in the syringe.';
@@ -396,6 +450,7 @@ function v(id){ var el=document.getElementById(id); return el ? el.value.trim() 
 function ev(key){ var el=document.querySelector('[data-edu="'+key+'"]'); return el ? el.value.trim() : ''; }
 function isOn(id){ var el=document.getElementById(id); return el && el.classList.contains('active'); }
 function optOn(name){ var el=document.querySelector('[data-opt="'+name+'"]'); return el && el.classList.contains('active'); }
+function line(label, value){ return label + ': ' + (value || ''); }
 
 function setPath(p){
   pathVal = p;
@@ -409,6 +464,24 @@ function setPath(p){
   buildNote();
 }
 
+function setTpl(t){
+  tplVal = t;
+  document.getElementById('tplA').classList.toggle('active', t==='a');
+  document.getElementById('tplB').classList.toggle('active', t==='b');
+  document.getElementById('tplA-fields').classList.toggle('show', t==='a');
+  document.getElementById('tplB-fields').classList.toggle('show', t==='b');
+  buildNote();
+}
+
+function setMedMode(m){
+  medMode = m;
+  document.getElementById('btn-taught').classList.toggle('active', m==='taught');
+  document.getElementById('btn-knowledgeable').classList.toggle('active', m==='knowledgeable');
+  document.getElementById('med-taught').classList.toggle('show', m==='taught');
+  document.getElementById('med-knowledgeable').classList.toggle('show', m==='knowledgeable');
+  buildNote();
+}
+
 function setChip(btn){
   var k=btn.getAttribute('data-k'), val=btn.getAttribute('data-v');
   chips[k]=val;
@@ -416,28 +489,24 @@ function setChip(btn){
   if(k==='tMore'){ document.getElementById('tMoreRow').style.display = val==='more' ? 'block' : 'none'; }
   buildNote();
 }
+
 function toggleSolo(btn){
   btn.classList.toggle('active');
   var id=btn.id;
   if(btn.getAttribute('data-opt')==='tInsulin'){ document.getElementById('tInsRow').style.display = btn.classList.contains('active') ? 'flex' : 'none'; }
   if(btn.getAttribute('data-opt')==='tLumen'){ document.getElementById('tLumRow').style.display = btn.classList.contains('active') ? 'block' : 'none'; }
-  // Risk factor detail boxes
   if(id && id.indexOf('risk-')===0){
     var det=document.getElementById(id+'-detail');
     if(det) det.style.display = btn.classList.contains('active') ? 'block' : 'none';
   }
   buildNote();
 }
+
 function toggleNoIv(btn){
   btn.classList.toggle('active');
   var block=document.getElementById('ivBlock');
-  if(btn.classList.contains('active')){
-    block.style.opacity='.35';
-    block.style.pointerEvents='none';
-  } else {
-    block.style.opacity='';
-    block.style.pointerEvents='';
-  }
+  if(btn.classList.contains('active')){ block.style.opacity='.35'; block.style.pointerEvents='none'; }
+  else { block.style.opacity=''; block.style.pointerEvents=''; }
   buildNote();
 }
 
@@ -448,8 +517,70 @@ function toggleEdu(name, btn){
   buildNote();
 }
 
-function line(label, value){ return label + ': ' + (value || ''); }
+// Build homebound paragraph
+function homeboundText(){
+  if(pathVal!=='ghc') return '';
+  var c=v('hb-condition'), l=v('hb-limitation'), taxing=v('hb-taxing'), skilled=v('hb-skilled'), disc=v('hb-discipline')||'nursing';
+  if(tplVal==='a'){
+    var needs=v('hb-needs'), why=v('hb-why');
+    return 'Patient has '+(c||'')+' resulting in '+(l||'')+'. Because of this condition, the patient requires '+(needs||'')+' to leave home due to '+(why||'')+'. The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by '+(taxing||'')+'. The patient requires skilled '+disc+' for '+(skilled||'')+'.';
+  } else {
+    var risk=v('hb-risk'), cons=v('hb-consequence');
+    return 'Patient has '+(c||'')+' resulting in '+(l||'')+'. Leaving home is medically contraindicated because '+(risk||'')+'. The patient is normally unable to leave home without '+(cons||'')+', and leaving home requires considerable and taxing effort, as evidenced by '+(taxing||'')+'. The patient requires skilled '+disc+' for '+(skilled||'')+'.';
+  }
+}
 
+// Build narrative text (advance care plan + SBAR)
+function narrativeText(){
+  var parts=[];
+  var rep=v('rep-narr'), pronoun=v('pronoun'), goal=v('goal');
+
+  // Advance care plan + med education
+  var medLine='';
+  if(medMode==='taught'){
+    var who=v('taught-who'), med=v('taught-med'), sides=v('taught-sides');
+    medLine=' '+(who||'Patient/caregiver')+' educated on the high risk med'+(med?' '+med:'')+(sides?' including side effects of '+sides:'')+'.';
+  } else {
+    var kw=v('know-who'), km=v('know-med');
+    medLine=' '+(kw||'Patient/caregiver')+' are 100% knowledgeable with medication regimen dose, indications, side effects, and interactions of all medication'+(km?' including high risk medication '+km:'')+'.';
+  }
+  var opening='Advance care plan established involving the patient and their representative'+(rep?' '+rep:'')+', including the medical treatment preferences, understanding of illness, interventions, goals and discharge plans. Patient/caregiver states '+pronoun+' goal is to '+(goal||'')+'.'+medLine;
+  parts.push(opening);
+
+  // Situation
+  var sit=v('situation');
+  if(sit) parts.push(sit);
+
+  // Background
+  var dcDate=v('dc-date'), los=v('los'), admitReason=v('admit-reason'), inpatientEvents=v('inpatient-events');
+  if(dcDate||los||admitReason||inpatientEvents){
+    var bg='Patient was discharged on '+(dcDate||'')+(los?' after '+los+' in the hospital':'');
+    if(admitReason) bg+=' with a brief history of '+admitReason;
+    if(inpatientEvents) bg+='. Significant events while inpatient: '+inpatientEvents;
+    bg+='.';
+    parts.push(bg);
+  }
+
+  // Pertinent history
+  var hx=v('pertinent-hx');
+  if(hx) parts.push('Pertinent history: '+hx);
+
+  // Assessment
+  var ass=v('assessment');
+  if(ass) parts.push('Assessment: '+ass);
+
+  // Plan
+  var plan=v('plan');
+  if(plan) parts.push('Plan: '+plan);
+
+  // Next visit
+  var nv=v('next-visit');
+  if(nv) parts.push('Next visit scheduled for '+nv+'.');
+
+  return parts;
+}
+
+// Education blocks
 function eduBlocks(){
   var parts=[];
   if(eduOn.gravity){
@@ -495,18 +626,31 @@ function eduBlocks(){
 function buildNote(){
   if(!pathVal){ document.getElementById('output').value=''; return; }
   var n=[];
+
+  // Header
   n.push(line('SOC COMPLETED BY/DATE', v('socBy')));
   n.push(line('CASE MANAGER', v('cm')));
   if(pathVal==='pci') n.push(line('CERT PERIOD', v('certPeriod')));
   n.push(line('FREQUENCY & DURATION', v('freq')));
   if(pathVal==='ghc') n.push(line('HOSPITAL SELF RISK ASSESSMENT SCORE', v('hospRisk')));
   n.push(line('OTHER CLINICIANS/FREQUENCY', v('otherClin')));
-  if(pathVal==='ghc') n.push('Patient is homebound because of '+v('homebound')+'.');
+
+  // Homebound (GHC)
+  if(pathVal==='ghc'){
+    var hb=homeboundText();
+    if(hb) n.push(hb);
+  }
+
+  // Physicians
   n.push(line('PHYSICIAN SIGNING ORDERS', v('mdSign')));
   n.push(line('OTHER PHYSICIANS INVOLVED IN CARE', v('mdOther')));
   n.push(line('DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN', v('mdAppt')));
   n.push(line('DIAGNOSIS RELATED TO HOME CARE', v('dx')));
+
+  // ER risk (GHC)
   if(pathVal==='ghc') n.push((chips.erRisk||'') + ' RISK FOR ER VISITS AND READMISSION TO HOSPITAL');
+
+  // IV / labs
   var noIv = isOn('noIvGhc');
   if(!(pathVal==='ghc' && noIv)){
     n.push(line('IV ORDER', v('ivOrder')));
@@ -516,15 +660,22 @@ function buildNote(){
     n.push('LABS: '+v('labs')+'                DUE ON: '+v('labsDue'));
   }
   n.push(line('IMMEDIATE NEEDS', v('immNeed')));
+
+  // VAD
   var vad=line('VENOUS ACCESS DEVICE', v('vad'));
   if(isOn('noTotalLen')) vad+=' Total length is not documented.';
   n.push(vad);
+
+  // Narrative (advance care plan + SBAR)
+  var narr=narrativeText();
+  narr.forEach(function(p){ n.push(p); });
+
+  // Visit summary
   if(pathVal==='ghc') n.push(line('VISIT SUMMARY/FOLLOW UP NEEDS', v('visitSum')));
   else n.push(line('VISIT SUMMARY', v('visitSum')));
-  eduBlocks().forEach(function(p){ n.push(p); });
+
+  // OASIS risk factor details (GHC)
   if(pathVal==='ghc'){
-    var rn=v('repName');
-    // Risk factor supporting details go into the visit summary
     var riskParts=[];
     var riskLabels=['1. History of falls (2+ falls or any fall with injury in past 12 months)','2. Unintentional weight loss of 10+ pounds in past 12 months','3. Multiple hospitalizations (2+ in past 6 months)','4. Multiple ED visits (2+ in past 6 months)','5. Decline in mental, emotional, or behavioral status in past 3 months','6. Difficulty complying with medical instructions in past 3 months','7. Currently taking 5 or more medications','8. Currently reports exhaustion','9. Other risk(s) not listed'];
     for(var i=1;i<=9;i++){
@@ -537,6 +688,11 @@ function buildNote(){
       riskParts.forEach(function(rp){ n.push(rp); });
     }
   }
+
+  // Education blocks
+  eduBlocks().forEach(function(p){ n.push(p); });
+
+  // Representative & admission (GHC)
   if(pathVal==='ghc'){
     var rn=v('repName');
     if(chips.repType==='legal') n.push('Patient has legally authorized representative, '+rn+', and will be involved with their plan of care.');
@@ -553,6 +709,7 @@ function buildNote(){
     }
     n.push(line('SUPPLIES', v('supplies')));
   }
+
   document.getElementById('output').value = n.join('\n\n');
 }
 
