@@ -270,6 +270,30 @@
         <textarea id="pertinent-hx" rows="2" placeholder="e.g., History of CHF, diabetes, and prior CVA with residual left-sided weakness. Currently non-weight-bearing on left leg due to diabetic foot wound, which limits mobility and increases fall risk."></textarea>
       </div>
 
+      <!-- OASIS risk factors (GHC) — supports the pertinent history paragraph -->
+      <div class="only-ghc">
+        <div class="sec">OASIS risk factors — click yes to add supporting detail</div>
+        <div class="cue">If you check any of these in the OASIS, your note must have supporting detail. Click the ones that apply — each adds a prompt line for your detail. The detail you type flows into the Pertinent History paragraph (no labels or numbers in the note).</div>
+        <div class="fg"><button type="button" class="chip" id="risk-1" onclick="toggleSolo(this); buildNote();">History of falls (2+ falls or any fall with injury in past 12 months)</button></div>
+        <div class="fg" id="risk-1-detail" style="display:none;"><label>Supporting detail — falls</label><textarea id="risk1d" rows="2" placeholder="e.g., Patient reports 3 falls in past 8 months, most recent fall at home resulting in ER visit for right hip contusion"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-2" onclick="toggleSolo(this); buildNote();">Unintentional weight loss of 10+ pounds in past 12 months</button></div>
+        <div class="fg" id="risk-2-detail" style="display:none;"><label>Supporting detail — weight loss</label><textarea id="risk2d" rows="2" placeholder="e.g., Patient reports unintentional 12 lb weight loss over past 6 months, from 165 lb to 153 lb"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-3" onclick="toggleSolo(this); buildNote();">Multiple hospitalizations (2+ in past 6 months)</button></div>
+        <div class="fg" id="risk-3-detail" style="display:none;"><label>Supporting detail — hospitalizations</label><textarea id="risk3d" rows="2" placeholder="e.g., Patient hospitalized 3 times in past 4 months for CHF exacerbation — most recent discharge 8/15/26"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-4" onclick="toggleSolo(this); buildNote();">Multiple ED visits (2+ in past 6 months)</button></div>
+        <div class="fg" id="risk-4-detail" style="display:none;"><label>Supporting detail — ED visits</label><textarea id="risk4d" rows="2" placeholder="e.g., Patient reports 2 ER visits in past 3 months for shortness of breath"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-5" onclick="toggleSolo(this); buildNote();">Decline in mental, emotional, or behavioral status in past 3 months</button></div>
+        <div class="fg" id="risk-5-detail" style="display:none;"><label>Supporting detail — cognitive/behavioral decline</label><textarea id="risk5d" rows="2" placeholder="e.g., Daughter reports patient has become increasingly confused and forgetful over past 2 months, BIMS score 9/30"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-6" onclick="toggleSolo(this); buildNote();">History of difficulty complying with medical instructions in past 3 months</button></div>
+        <div class="fg" id="risk-6-detail" style="display:none;"><label>Supporting detail — noncompliance</label><textarea id="risk6d" rows="2" placeholder="e.g., Patient reports missing doses of Lasix due to cost; blood pressure medication not filled in 2 months"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-7" onclick="toggleSolo(this); buildNote();">Currently taking 5 or more medications</button></div>
+        <div class="fg" id="risk-7-detail" style="display:none;"><label>Supporting detail — polypharmacy</label><textarea id="risk7d" rows="2" placeholder="e.g., Patient currently takes 8 medications: Metoprolol, Lisinopril, Furosemide, Metformin, Glipizide, Atorvastatin, Aspirin, Pantoprazole"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-8" onclick="toggleSolo(this); buildNote();">Currently reports exhaustion</button></div>
+        <div class="fg" id="risk-8-detail" style="display:none;"><label>Supporting detail — exhaustion</label><textarea id="risk8d" rows="2" placeholder="e.g., Patient reports feeling exhausted daily, tires after walking 10 feet to bathroom"></textarea></div>
+        <div class="fg"><button type="button" class="chip" id="risk-9" onclick="toggleSolo(this); buildNote();">Other risk(s) not listed</button></div>
+        <div class="fg" id="risk-9-detail" style="display:none;"><label>Supporting detail — other risk</label><textarea id="risk9d" rows="2" placeholder="e.g., Patient lives alone with no caregiver support, hearing impaired"></textarea></div>
+      </div>
+
       <!-- Assessment -->
       <div class="sec">Assessment <span class="sbar">— outliers and notable findings</span></div>
       <div class="fg"><label>Assessment outliers <span class="hint">— abnormal findings, vitals, wound, pain, functional limits</span></label>
@@ -287,32 +311,7 @@
       <div class="sec" id="vsTitle">VISIT SUMMARY</div>
       <div class="fg"><textarea id="visitSum" rows="4" placeholder="Visit summary (GHC also uses this for follow-up needs)"></textarea></div>
 
-      <!-- ===== SECTION 8: OASIS RISK FACTORS (GHC) ===== -->
-      <div class="only-ghc">
-        <div class="sec">OASIS risk factors — click yes to add supporting detail</div>
-        <div class="cue">If you check any of these in the OASIS, your note must have supporting detail. Click the ones that apply — each adds a prompt line for your detail into the visit summary.</div>
-        <div class="fg"><button type="button" class="chip" id="risk-1" onclick="toggleSolo(this); buildNote();">1. History of falls (2+ falls or any fall with injury in past 12 months)</button></div>
-        <div class="fg" id="risk-1-detail" style="display:none;"><label>Supporting detail — falls</label><textarea id="risk1d" rows="2" placeholder="e.g., Patient reports 3 falls in past 8 months, most recent fall at home resulting in ER visit for right hip contusion"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-2" onclick="toggleSolo(this); buildNote();">2. Unintentional weight loss of 10+ pounds in past 12 months</button></div>
-        <div class="fg" id="risk-2-detail" style="display:none;"><label>Supporting detail — weight loss</label><textarea id="risk2d" rows="2" placeholder="e.g., Patient reports unintentional 12 lb weight loss over past 6 months, from 165 lb to 153 lb"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-3" onclick="toggleSolo(this); buildNote();">3. Multiple hospitalizations (2+ in past 6 months)</button></div>
-        <div class="fg" id="risk-3-detail" style="display:none;"><label>Supporting detail — hospitalizations</label><textarea id="risk3d" rows="2" placeholder="e.g., Patient hospitalized 3 times in past 4 months for CHF exacerbation — most recent discharge 8/15/26"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-4" onclick="toggleSolo(this); buildNote();">4. Multiple ED visits (2+ in past 6 months)</button></div>
-        <div class="fg" id="risk-4-detail" style="display:none;"><label>Supporting detail — ED visits</label><textarea id="risk4d" rows="2" placeholder="e.g., Patient reports 2 ER visits in past 3 months for shortness of breath"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-5" onclick="toggleSolo(this); buildNote();">5. Decline in mental, emotional, or behavioral status in past 3 months</button></div>
-        <div class="fg" id="risk-5-detail" style="display:none;"><label>Supporting detail — cognitive/behavioral decline</label><textarea id="risk5d" rows="2" placeholder="e.g., Daughter reports patient has become increasingly confused and forgetful over past 2 months, BIMS score 9/30"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-6" onclick="toggleSolo(this); buildNote();">6. History of difficulty complying with medical instructions in past 3 months</button></div>
-        <div class="fg" id="risk-6-detail" style="display:none;"><label>Supporting detail — noncompliance</label><textarea id="risk6d" rows="2" placeholder="e.g., Patient reports missing doses of Lasix due to cost; blood pressure medication not filled in 2 months"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-7" onclick="toggleSolo(this); buildNote();">7. Currently taking 5 or more medications</button></div>
-        <div class="fg" id="risk-7-detail" style="display:none;"><label>Supporting detail — polypharmacy</label><textarea id="risk7d" rows="2" placeholder="e.g., Patient currently takes 8 medications: Metoprolol, Lisinopril, Furosemide, Metformin, Glipizide, Atorvastatin, Aspirin, Pantoprazole"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-8" onclick="toggleSolo(this); buildNote();">8. Currently reports exhaustion</button></div>
-        <div class="fg" id="risk-8-detail" style="display:none;"><label>Supporting detail — exhaustion</label><textarea id="risk8d" rows="2" placeholder="e.g., Patient reports feeling exhausted daily, tires after walking 10 feet to bathroom"></textarea></div>
-        <div class="fg"><button type="button" class="chip" id="risk-9" onclick="toggleSolo(this); buildNote();">9. Other risk(s) not listed</button></div>
-        <div class="fg" id="risk-9-detail" style="display:none;"><label>Supporting detail — other risk</label><textarea id="risk9d" rows="2" placeholder="e.g., Patient lives alone with no caregiver support, hearing impaired"></textarea></div>
-      </div>
-
       <!-- ===== SECTION 9: EDUCATION BLOCKS ===== -->
-      <div class="sec">Education added to this note</div>
       <div id="eduHost"></div>
       <div class="edu-card" id="card-gravity">
         <h4>Gravity gtt</h4>
@@ -563,7 +562,25 @@ function narrativeText(){
 
   // Pertinent history
   var hx=v('pertinent-hx');
-  if(hx) parts.push('Pertinent history: '+hx);
+  // OASIS risk factor supporting details append to pertinent history (GHC only)
+  if(pathVal==='ghc'){
+    var riskDetails=[];
+    for(var i=1;i<=9;i++){
+      if(isOn('risk-'+i)){
+        var rd=v('risk'+i+'d');
+        if(rd) riskDetails.push(rd);
+      }
+    }
+    if(hx && riskDetails.length>0){
+      parts.push('Pertinent history: '+hx+' '+riskDetails.join(' '));
+    } else if(hx){
+      parts.push('Pertinent history: '+hx);
+    } else if(riskDetails.length>0){
+      parts.push('Pertinent history: '+riskDetails.join(' '));
+    }
+  } else {
+    if(hx) parts.push('Pertinent history: '+hx);
+  }
 
   // Assessment
   var ass=v('assessment');
@@ -673,21 +690,6 @@ function buildNote(){
   // Visit summary
   if(pathVal==='ghc') n.push(line('VISIT SUMMARY/FOLLOW UP NEEDS', v('visitSum')));
   else n.push(line('VISIT SUMMARY', v('visitSum')));
-
-  // OASIS risk factor details (GHC)
-  if(pathVal==='ghc'){
-    var riskParts=[];
-    var riskLabels=['1. History of falls (2+ falls or any fall with injury in past 12 months)','2. Unintentional weight loss of 10+ pounds in past 12 months','3. Multiple hospitalizations (2+ in past 6 months)','4. Multiple ED visits (2+ in past 6 months)','5. Decline in mental, emotional, or behavioral status in past 3 months','6. Difficulty complying with medical instructions in past 3 months','7. Currently taking 5 or more medications','8. Currently reports exhaustion','9. Other risk(s) not listed'];
-    for(var i=1;i<=9;i++){
-      if(isOn('risk-'+i)){
-        riskParts.push(riskLabels[i-1]+': '+v('risk'+i+'d'));
-      }
-    }
-    if(riskParts.length>0){
-      n.push('OASIS risk factors with supporting detail:');
-      riskParts.forEach(function(rp){ n.push(rp); });
-    }
-  }
 
   // Education blocks
   eduBlocks().forEach(function(p){ n.push(p); });
