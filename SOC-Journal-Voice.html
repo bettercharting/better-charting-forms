@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC Journal — Voice Mode | AZ Home Care</title>
+<style>
+  :root {
+    --blue: #123b62; --blue-light: #eef7ff; --blue-border: #2f80c0;
+    --grey: #526070; --green: #2f8f4e; --green-bg: #eaf7ef; --green-border: #acd8bb;
+    --pci: #c0392b; --pci-bg: #fdf0ee; --pci-border: #e8b8b2;
+    --ghc: #123b62; --ghc-bg: #eef7ff; --ghc-border: #2f80c0;
+    --orange-bg: #fff8ed; --orange-border: #f1d1a6; --orange-left: #d9822b;
+    --bg: #eef2f6; --white: #fff; --border: #d8e2ec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #172033; }
+  body { padding: 12px; }
+
+  .app { max-width: 600px; margin: 0 auto; }
+  .header { background: var(--blue); color: #fff; padding: 16px 20px; border-radius: 12px 12px 0 0; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+
+  .card { background: #fff; border-radius: 0 0 12px 12px; padding: 20px; }
+
+  /* Path selector */
+  .path-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .path-btn { flex: 1; padding: 16px 14px; border: 2px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; text-align: center; font-weight: 700; font-size: 16px; color: var(--grey); }
+  .path-btn.pci.active { border-color: var(--pci); background: var(--pci-bg); color: var(--pci); }
+  .path-btn.ghc.active { border-color: var(--ghc-border); background: var(--ghc-bg); color: var(--ghc); }
+
+  /* Voice status — big text for driving */
+  .voice-status { display: none; }
+  .voice-status.show { display: block; }
+  .vs-current { font-size: 18px; font-weight: 700; color: var(--blue); margin-bottom: 8px; line-height: 1.4; }
+  .vs-prompt { font-size: 15px; color: var(--grey); margin-bottom: 12px; line-height: 1.5; min-height: 44px; }
+  .vs-heard { background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 10px; padding: 12px 14px; font-size: 15px; color: #1a4d2a; margin-bottom: 12px; min-height: 44px; line-height: 1.4; }
+  .vs-heard .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--green); display: block; margin-bottom: 4px; }
+  .vs-listening { font-size: 14px; color: var(--green); font-weight: 700; display: none; }
+  .vs-listening.show { display: block; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+  .progress-bar { height: 6px; background: var(--blue-light); border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s; }
+
+  /* Start / stop buttons — big for driving */
+  .big-btn { width: 100%; padding: 20px; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; color: #fff; background: var(--blue); margin-bottom: 10px; }
+  .big-btn.green { background: var(--green); }
+  .big-btn.red { background: #c0392b; }
+  .big-btn:active { transform: scale(.98); }
+  .big-btn:disabled { opacity: .5; }
+
+  /* Output */
+  .out-wrap { display: none; margin-top: 16px; }
+  .out-wrap.show { display: block; }
+  #output { width: 100%; min-height: 200px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 8px; background: #f4f8fc; font-size: 14px; line-height: 1.55; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { border: none; border-radius: 8px; padding: 14px 16px; font-weight: 700; cursor: pointer; color: #fff; background: var(--blue); font-size: 15px; }
+  .btn.green { background: var(--green); }
+  .btn.copied { background: #1a5c2c; }
+
+  .cue { background: var(--orange-bg); border: 1px solid var(--orange-border); border-left: 4px solid var(--orange-left); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #7a5c2a; margin-bottom: 16px; line-height: 1.5; }
+  .cue b { color: var(--orange-left); }
+
+  .footer { text-align: center; font-size: 11px; color: #a0b0c0; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  .field-log { margin-top: 12px; max-height: 180px; overflow-y: auto; }
+  .field-log .fl-item { font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--grey); }
+  .field-log .fl-item .fl-label { font-weight: 700; color: var(--blue); }
+  .field-log .fl-item.done { opacity: .6; }
+
+  .no-speech { background: #fff3cd; border: 2px solid #e0b000; border-radius: 8px; padding: 12px; font-size: 14px; color: #7a5c00; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>SOC Journal — Voice Mode</h1>
+    <div class="sub">Tap PCI or GHC, tap Start, then talk. It reads prompts and listens. Hands free.</div>
+  </div>
+
+  <div class="card">
+    <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
+
+    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start Voice. The page reads each prompt aloud. You speak your answer. It enters it and moves to the next field. Say "skip" to skip a field. Say "repeat" to hear it again. At the end it says "done" and the note is ready to copy.</div>
+
+    <div class="path-row">
+      <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI<span style="display:block;font-size:11px;font-weight:400;margin-top:2px;">Private insurance</span></button>
+      <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC<span style="display:block;font-size:11px;font-weight:400;margin-top:2px;">Medicare / OASIS</span></button>
+    </div>
+
+    <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()" disabled>Select PCI or GHC first</button>
+    <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
+
+    <div class="voice-status" id="voiceStatus">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="vs-current" id="vsCurrent">Starting…</div>
+      <div class="vs-prompt" id="vsPrompt"></div>
+      <div class="vs-heard" id="vsHeard" style="display:none;"><span class="label">Heard:</span><span id="vsHeardText"></span></div>
+      <div class="vs-listening" id="vsListening">🎤 Listening…</div>
+      <div class="field-log" id="fieldLog"></div>
+    </div>
+
+    <div class="out-wrap" id="outWrap">
+      <label style="font-size:13px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px;">Journal note — ready to copy</label>
+      <textarea id="output" readonly></textarea>
+      <div class="btns">
+        <button type="button" class="btn green" id="copyBtn" onclick="copyNote()">Copy journal</button>
+        <button type="button" class="btn" onclick="restartVoice()">Start over</button>
+      </div>
+    </div>
+
+    <div class="footer">Made for AZ Home Care — bettercharting.gumroad.com<br>Documentation support tool — review before signing. Follow agency policy and provider orders.</div>
+  </div>
+</div>
+
+<script>
+var pathVal = '';
+var fields = [];
+var fieldIdx = 0;
+var recognizing = false;
+var synth = window.speechSynthesis;
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var recognition = null;
+var currentAnswer = '';
+var answerTimeout = null;
+var voiceActive = false;
+
+if (!SR) document.getElementById('noSpeech').style.display = 'block';
+
+function setPath(p) {
+  pathVal = p;
+  document.getElementById('btnPci').classList.toggle('active', p === 'pci');
+  document.getElementById('btnGhc').classList.toggle('active', p === 'ghc');
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = 'Start Voice — ' + (p === 'pci' ? 'PCI' : 'GHC');
+  buildFieldList();
+}
+
+// Build the list of voice fields based on path
+function buildFieldList() {
+  fields = [];
+  var common = [
+    { id: 'socBy', label: 'SOC completed by date', prompt: 'Who completed the start of care, and what date? For example, Katie Escobar, September 25th.', },
+    { id: 'cm', label: 'Case manager', prompt: 'Who is the case manager?' },
+  ];
+  if (pathVal === 'pci') {
+    common.push({ id: 'certPeriod', label: 'Cert period', prompt: 'What is the certification period? For example, until end of therapy, or up to 52 weeks.' });
+  }
+  common.push({ id: 'freq', label: 'Frequency & duration', prompt: 'What is the frequency and duration? For example, skilled nursing 2 times per week for 3 weeks.' });
+  if (pathVal === 'ghc') {
+    common.push({ id: 'hospRisk', label: 'Hospital self risk assessment score', prompt: 'What is the hospital self risk assessment score?' });
+  }
+  common.push({ id: 'otherClin', label: 'Other clinicians/frequency', prompt: 'Are there other clinicians involved? For example, PT 2 times per week, home health aide 3 times per week.' });
+  common.push({ id: 'mdSign', label: 'Physician signing orders', prompt: 'Which physician signed the orders?' });
+  common.push({ id: 'mdOther', label: 'Other physicians', prompt: 'Are there other physicians involved in care?' });
+  common.push({ id: 'mdAppt', label: 'Date of next physician appointment', prompt: 'What is the date of the next physician appointment, and which physician?' });
+  common.push({ id: 'dx', label: 'Diagnosis related to home care', prompt: 'What is the diagnosis related to home care?' });
+  if (pathVal === 'ghc') {
+    common.push({ id: 'erRisk', label: 'ER readmit risk', prompt: 'Is the patient high, moderate, or low risk for ER visits and readmission to hospital?', isChip: true, chipKey: 'erRisk' });
+  }
+  common.push({ id: 'ivOrder', label: 'IV order', prompt: 'What is the IV order?', skipIf: 'noIv' });
+  common.push({ id: 'ivMed', label: 'IV medication', prompt: 'What IV medication, and is there follow up teaching needed? What med?', skipIf: 'noIv' });
+  common.push({ id: 'nextDose', label: 'Next dose due', prompt: 'When is the next dose due? For example, 2 PM.' , skipIf: 'noIv'});
+  common.push({ id: 'lastDress', label: 'Last dressing change', prompt: 'What was the date of the last dressing change?', skipIf: 'noIv' });
+  common.push({ id: 'labs', label: 'Labs', prompt: 'What labs are needed?', skipIf: 'noIv' });
+  common.push({ id: 'labsDue', label: 'Labs due on', prompt: 'When are the labs due?', skipIf: 'noIv' });
+  common.push({ id: 'immNeed', label: 'Immediate needs', prompt: 'Are there any immediate needs?' });
+  common.push({ id: 'vad', label: 'Venous access device', prompt: 'Describe the venous access device. Type, date of insertion, total length, external length, and blood return.' });
+
+  if (pathVal === 'ghc') {
+    // Homebound statement
+    common.push({ id: 'hb-condition', label: 'Homebound — condition', prompt: 'What condition makes the patient homebound? For example, CHF exacerbation.' });
+    common.push({ id: 'hb-limitation', label: 'Homebound — limitation', prompt: 'What is the functional limitation? What can the patient not safely do?' });
+    common.push({ id: 'hb-needs', label: 'Homebound — needs to leave', prompt: 'What does the patient need to leave home? For example, walker and assistance of another person.' });
+    common.push({ id: 'hb-why', label: 'Homebound — why unsafe', prompt: 'Why is it unsafe without that support? What could go wrong?' });
+    common.push({ id: 'hb-taxing', label: 'Homebound — taxing proof', prompt: 'What happens when the patient tries to leave? Describe the taxing effort. For example, shortness of breath after walking 10 feet.' });
+    common.push({ id: 'hb-skilled', label: 'Homebound — skilled need', prompt: 'What is the skilled nursing need? For example, wound care, medication teaching, IV care.' });
+  }
+
+  // Narrative
+  common.push({ id: 'rep-narr', label: 'Representative', prompt: 'Who was present as the representative? For example, spouse, daughter, or caregiver.' });
+  common.push({ id: 'goal', label: 'Patient goal', prompt: 'What is the patient or caregiver goal? For example, remain safely at home, return to prior level of function.' });
+  common.push({ id: 'situation', label: 'Situation', prompt: 'Describe the situation. Where was the visit, and who was present?' });
+  common.push({ id: 'dc-date', label: 'Discharge date', prompt: 'What was the discharge date from the hospital?' });
+  common.push({ id: 'los', label: 'Length of stay', prompt: 'How many days was the patient in the hospital?' });
+  common.push({ id: 'admit-reason', label: 'Reason for admission', prompt: 'Briefly, what was the reason for admission?' });
+  common.push({ id: 'inpatient-events', label: 'Significant inpatient events', prompt: 'Were there significant events while inpatient? Procedures, complications, changes?' });
+  common.push({ id: 'pertinent-hx', label: 'Pertinent history', prompt: 'What pertinent history influences the current situation?' });
+  common.push({ id: 'assessment', label: 'Assessment', prompt: 'What were the assessment outliers? Abnormal findings, vitals, wound, pain, functional limits.' });
+  common.push({ id: 'plan', label: 'Plan of care', prompt: 'What is the plan of care? What will be done, referrals, orders?' });
+  common.push({ id: 'next-visit', label: 'Next visit', prompt: 'When is the next visit, and which nurse is scheduled?' });
+  common.push({ id: 'visitSum', label: 'Visit summary', prompt: 'What is the visit summary?' });
+
+  if (pathVal === 'ghc') {
+    // OASIS risk factors
+    var riskLabels = [
+      'History of falls, 2 or more falls or any fall with injury in the past 12 months',
+      'Unintentional weight loss of 10 pounds or more in the past 12 months',
+      'Multiple hospitalizations, 2 or more in the past 6 months',
+      'Multiple emergency department visits, 2 or more in the past 6 months',
+      'Decline in mental, emotional, or behavioral status in the past 3 months',
+      'Difficulty complying with medical instructions in the past 3 months',
+      'Currently taking 5 or more medications',
+      'Currently reports exhaustion',
+      'Other risks not listed',
+    ];
+    for (var i = 0; i < riskLabels.length; i++) {
+      var num = i + 1;
+      common.push({ id: 'risk-q-' + num, label: 'OASIS risk: ' + riskLabels[i], prompt: 'Does this apply: ' + riskLabels[i] + '? Say yes or no.', isRisk: true, riskNum: num });
+    }
+
+    // Representative & admission
+    common.push({ id: 'repType', label: 'Representative type', prompt: 'Is the representative legally authorized, or selected? Say legally authorized or selected.', isChip: true, chipKey: 'repType' });
+    common.push({ id: 'repName', label: 'Representative name', prompt: 'What is the representative name and relationship?' });
+    common.push({ id: 'clinMgr', label: 'Clinical manager', prompt: 'Who is the clinical manager?' });
+    common.push({ id: 'goals', label: 'Goals', prompt: 'What are the goals developed with the patient and representative?' });
+    common.push({ id: 'supplies', label: 'Supplies', prompt: 'What supplies are needed?' });
+  }
+
+  fields = common;
+}
+
+// Education — asked at the end
+var eduTypes = [
+  { key: 'gravity', name: 'Gravity drip', prompt: 'Add gravity drip education? Say yes or no.' },
+  { key: 'ball', name: 'Infuser ball', prompt: 'Add infuser ball education? Say yes or no.' },
+  { key: 'tpn', name: 'TPN', prompt: 'Add TPN education? Say yes or no.' },
+  { key: 'pump', name: 'Tubing changes and pump', prompt: 'Add tubing changes and pump education? Say yes or no.' },
+  { key: 'ivp', name: 'IV push', prompt: 'Add IV push education? Say yes or no.' },
+  { key: 'labs', name: 'Labs', prompt: 'Add labs education? Say yes or no.' },
+  { key: 'picc', name: 'PICC care', prompt: 'Add PICC care education? Say yes or no.' },
+];
+
+var eduOn = {};
+var eduIdx = 0;
+var eduMode = false;
+var eduDetailMode = null; // tracks which edu detail sub-field we're in
+
+var flushNSH = 'Patient instructed on VAD flushed with NS 10 ml pre and post med using push-pause method and leaving 1 ml in the syringe. Final flush with 5 ml Heparin 100U/ml using the push-pause method and leaving 1 ml in the syringe.';
+
+function v(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function startVoice() {
+  if (!SR) return;
+  voiceActive = true;
+  fieldIdx = 0;
+  eduMode = false;
+  eduIdx = 0;
+  eduOn = {};
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = 'block';
+  document.getElementById('voiceStatus').classList.add('show');
+  document.getElementById('outWrap').classList.remove('show');
+
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = function(event) {
+    var interim = '';
+    var final = '';
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        final += event.results[i][0].transcript;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    if (interim) {
+      document.getElementById('vsHeard').style.display = 'block';
+      document.getElementById('vsHeardText').textContent = interim;
+    }
+    if (final) {
+      currentAnswer = final.trim();
+      document.getElementById('vsHeard').style.display = 'block';
+      document.getElementById('vsHeardText').textContent = currentAnswer;
+    }
+  };
+
+  recognition.onend = function() {
+    recognizing = false;
+    document.getElementById('vsListening').classList.remove('show');
+    if (currentAnswer && voiceActive) {
+      processAnswer(currentAnswer);
+    } else if (voiceActive) {
+      // No answer detected — retry listening
+      setTimeout(function() { if (voiceActive) listen(); }, 300);
+    }
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error === 'no-speech') {
+      // No speech detected — retry
+      setTimeout(function() { if (voiceActive) listen(); }, 300);
+    } else if (event.error === 'not-allowed') {
+      speakAndShow('Microphone access denied. Allow microphone access in Safari settings.');
+      stopVoice();
+    }
+  };
+
+  // Start
+  speakAndShow('Voice mode started. Say skip to move to the next field. Say repeat to hear the prompt again.', function() {
+    nextField();
+  });
+}
+
+function listen() {
+  if (!voiceActive || !recognition) return;
+  currentAnswer = '';
+  document.getElementById('vsListening').classList.add('show');
+  try {
+    recognition.start();
+    recognizing = true;
+  } catch(e) {
+    // Already started — stop and restart
+    try { recognition.stop(); } catch(e2) {}
+    setTimeout(function() { if (voiceActive) listen(); }, 500);
+  }
+}
+
+function nextField() {
+  if (!voiceActive) return;
+
+  if (!eduMode && fieldIdx >= fields.length) {
+    // Switch to education mode
+    eduMode = true;
+    eduIdx = 0;
+    if (pathVal === 'pci') {
+      // PCI also gets education
+      askEducation();
+    } else {
+      askEducation();
+    }
+    return;
+  }
+
+  if (eduMode) {
+    askEducation();
+    return;
+  }
+
+  var f = fields[fieldIdx];
+  // Skip IV fields if noIv is active and path is GHC
+  if (f.skipIf && pathVal === 'ghc') {
+    // Check if "No IV orders" was said — we'll handle this dynamically
+  }
+
+  var pct = Math.round((fieldIdx / fields.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('vsCurrent').textContent = f.label;
+  document.getElementById('vsHeard').style.display = 'none';
+  document.getElementById('vsHeardText').textContent = '';
+
+  speakAndShow(f.prompt, function() {
+    listen();
+  });
+}
+
+function processAnswer(answer) {
+  var lower = answer.toLowerCase();
+
+  // Voice commands
+  if (lower === 'skip' || lower === 'next' || lower === 'pass') {
+    currentAnswer = '';
+    if (!eduMode) fieldIdx++;
+    else eduIdx++;
+    setTimeout(nextField, 200);
+    return;
+  }
+  if (lower === 'repeat' || lower === 'again' || lower === 'say it again') {
+    if (!eduMode) {
+      var f = fields[fieldIdx];
+      speakAndShow(f.prompt, function() { listen(); });
+    } else {
+      askEducation();
+    }
+    return;
+  }
+  if (lower === 'stop' || lower === 'stop voice' || lower === 'pause') {
+    stopVoice();
+    return;
+  }
+
+  if (eduMode) {
+    handleEduAnswer(answer, lower);
+    return;
+  }
+
+  var f = fields[fieldIdx];
+
+  // Handle special fields
+  if (f.isChip) {
+    // ER risk or rep type — match the answer
+    if (f.id === 'erRisk') {
+      var val = '';
+      if (lower.indexOf('high') >= 0) val = 'HIGH';
+      else if (lower.indexOf('mod') >= 0) val = 'MODERATE';
+      else if (lower.indexOf('low') >= 0) val = 'LOW';
+      if (val) {
+        document.querySelectorAll('.chip[data-k="erRisk"]').forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-v') === val);
+        });
+        chips.erRisk = val;
+      }
+    }
+    if (f.id === 'repType') {
+      if (lower.indexOf('legal') >= 0) { chips.repType = 'legal'; }
+      else if (lower.indexOf('select') >= 0) { chips.repType = 'selected'; }
+    }
+  } else if (f.isRisk) {
+    // OASIS risk factor — yes adds it, no skips it
+    if (lower.indexOf('yes') >= 0 || lower.indexOf('yeah') >= 0 || lower.indexOf('yep') >= 0) {
+      // Mark this risk as active
+      var btn = document.getElementById('risk-' + f.riskNum);
+      if (btn) btn.classList.add('active');
+      // Ask for supporting detail
+      speakAndShow('What is the supporting detail for ' + f.label.replace('OASIS risk: ', '') + '?', function() {
+        listenForRiskDetail(f.riskNum);
+      });
+      return;
+    }
+    // No — skip it
+  } else {
+    // Regular field — enter the answer
+    var el = document.getElementById(f.id);
+    if (el) el.value = answer;
+  }
+
+  // Log it
+  addLog(f.label, answer);
+
+  fieldIdx++;
+  setTimeout(nextField, 300);
+}
+
+function listenForRiskDetail(num) {
+  // Temporarily override onresult to capture the detail
+  var oldOnresult = recognition.onresult;
+  recognition.onresult = function(event) {
+    var final = '';
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) final += event.results[i][0].transcript;
+    }
+    if (final) {
+      var el = document.getElementById('risk' + num + 'd');
+      if (el) el.value = final.trim();
+      document.getElementById('vsHeard').style.display = 'block';
+      document.getElementById('vsHeardText').textContent = final.trim();
+      addLog('Risk ' + num + ' detail', final.trim());
+      // Restore handler
+      recognition.onresult = oldOnresult;
+      fieldIdx++;
+      setTimeout(nextField, 300);
+    }
+  };
+  // Also restore onend to use the normal flow
+  setTimeout(function() {
+    recognition.onresult = oldOnresult;
+    if (voiceActive && !recognizing) listen();
+  }, 100);
+  listen();
+}
+
+function handleEduAnswer(answer, lower) {
+  if (eduDetailMode) {
+    // We're capturing a sub-field for an education type
+    // For simplicity, just capture the whole answer as the main detail
+    eduDetails[eduDetailMode] = eduDetails[eduDetailMode] || {};
+    // Put it in the first field
+    if (!eduDetails[eduDetailMode].med) {
+      eduDetails[eduDetailMode].med = answer;
+    } else if (!eduDetails[eduDetailMode].via) {
+      eduDetails[eduDetailMode].via = answer;
+    }
+    // Move on
+    eduDetailMode = null;
+    eduIdx++;
+    setTimeout(askEducation, 300);
+    return;
+  }
+
+  if (lower.indexOf('yes') >= 0 || lower.indexOf('yeah') >= 0 || lower.indexOf('yep') >= 0 || lower.indexOf('add') >= 0) {
+    eduOn[eduTypes[eduIdx].key] = true;
+    addLog('Education: ' + eduTypes[eduIdx].name, 'Added');
+    // Ask for medication name
+    speakAndShow('What medication for ' + eduTypes[eduIdx].name + '?', function() {
+      eduDetailMode = eduTypes[eduIdx].key;
+      listen();
+    });
+    return;
+  }
+  // No — skip
+  addLog('Education: ' + eduTypes[eduIdx].name, 'Skipped');
+  eduIdx++;
+  setTimeout(askEducation, 300);
+}
+
+var eduDetails = {};
+
+function askEducation() {
+  if (eduIdx >= eduTypes.length) {
+    finishVoice();
+    return;
+  }
+  var pct = Math.round(((fields.length + eduIdx) / (fields.length + eduTypes.length)) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('vsCurrent').textContent = 'Education: ' + eduTypes[eduIdx].name;
+  document.getElementById('vsHeard').style.display = 'none';
+  speakAndShow(eduTypes[eduIdx].prompt, function() {
+    listen();
+  });
+}
+
+function finishVoice() {
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('vsCurrent').textContent = 'Done!';
+  document.getElementById('vsPrompt').textContent = '';
+  document.getElementById('vsListening').classList.remove('show');
+  document.getElementById('vsHeard').style.display = 'none';
+  buildNote();
+  document.getElementById('outWrap').classList.add('show');
+  speakAndShow('Journal note complete. Tap copy journal when you arrive, then paste into your chart.', function() {
+    // Auto-copy
+    copyNote();
+  });
+}
+
+function stopVoice() {
+  voiceActive = false;
+  if (recognition) { try { recognition.stop(); } catch(e) {} }
+  if (synth) synth.cancel();
+  recognizing = false;
+  document.getElementById('startBtn').style.display = 'block';
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('vsListening').classList.remove('show');
+  buildNote();
+  document.getElementById('outWrap').classList.add('show');
+}
+
+function restartVoice() {
+  document.getElementById('outWrap').classList.remove('show');
+  startVoice();
+}
+
+function speakAndShow(text, after) {
+  document.getElementById('vsPrompt').textContent = text;
+  if (synth) {
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.onend = function() { if (after) after(); };
+    u.onerror = function() { if (after) after(); };
+    synth.speak(u);
+  } else {
+    if (after) after();
+  }
+}
+
+function addLog(label, value) {
+  var log = document.getElementById('fieldLog');
+  var item = document.createElement('div');
+  item.className = 'fl-item done';
+  item.innerHTML = '<span class="fl-label">' + label + ':</span> ' + (value || '(blank)');
+  log.insertBefore(item, log.firstChild);
+}
+
+// Chips state
+var chips = { erRisk: '', repType: '', tMore: '', lSpec: '' };
+
+// Build the note — same logic as the visual builder
+function buildNote() {
+  if (!pathVal) return;
+  var n = [];
+  n.push(line('SOC COMPLETED BY/DATE', v('socBy')));
+  n.push(line('CASE MANAGER', v('cm')));
+  if (pathVal === 'pci') n.push(line('CERT PERIOD', v('certPeriod')));
+  n.push(line('FREQUENCY & DURATION', v('freq')));
+  if (pathVal === 'ghc') n.push(line('HOSPITAL SELF RISK ASSESSMENT SCORE', v('hospRisk')));
+  n.push(line('OTHER CLINICIANS/FREQUENCY', v('otherClin')));
+
+  if (pathVal === 'ghc') {
+    var c = v('hb-condition'), l = v('hb-limitation'), taxing = v('hb-taxing'), skilled = v('hb-skilled');
+    var needs = v('hb-needs'), why = v('hb-why');
+    if (c || l) {
+      var hb = 'Patient has ' + (c || '') + ' resulting in ' + (l || '') + '. Because of this condition, the patient requires ' + (needs || '') + ' to leave home due to ' + (why || '') + '. The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '') + '. The patient requires skilled nursing for ' + (skilled || '') + '.';
+      n.push(hb);
+    }
+  }
+
+  n.push(line('PHYSICIAN SIGNING ORDERS', v('mdSign')));
+  n.push(line('OTHER PHYSICIANS INVOLVED IN CARE', v('mdOther')));
+  n.push(line('DATE OF APPOINTMENT WITH FOLLOWING PHYSICIAN', v('mdAppt')));
+  n.push(line('DIAGNOSIS RELATED TO HOME CARE', v('dx')));
+
+  if (pathVal === 'ghc') n.push((chips.erRisk || '') + ' RISK FOR ER VISITS AND READMISSION TO HOSPITAL');
+
+  n.push(line('IV ORDER', v('ivOrder')));
+  n.push(line('IV Medication', v('ivMed')));
+  n.push(line('Next dose due at', v('nextDose')));
+  n.push(line('DATE OF LAST DRESSING CHANGE', v('lastDress')));
+  n.push('LABS: ' + v('labs') + '                DUE ON: ' + v('labsDue'));
+
+  n.push(line('IMMEDIATE NEEDS', v('immNeed')));
+  n.push(line('VENOUS ACCESS DEVICE', v('vad')));
+
+  // Narrative
+  var rep = v('rep-narr'), goal = v('goal');
+  var medLine = '';
+  // Default to taught mode
+  medLine = ' Patient/caregiver educated on the high risk med.';
+  var opening = 'Advance care plan established involving the patient and their representative' + (rep ? ' ' + rep : '') + ', including the medical treatment preferences, understanding of illness, interventions, goals and discharge plans. Patient/caregiver states their goal is to ' + (goal || '') + '.' + medLine;
+  n.push(opening);
+
+  var sit = v('situation');
+  if (sit) n.push(sit);
+
+  var dcDate = v('dc-date'), los = v('los'), admitReason = v('admit-reason'), inpatientEvents = v('inpatient-events');
+  if (dcDate || los || admitReason || inpatientEvents) {
+    var bg = 'Patient was discharged on ' + (dcDate || '') + (los ? ' after ' + los + ' in the hospital' : '');
+    if (admitReason) bg += ' with a brief history of ' + admitReason;
+    if (inpatientEvents) bg += '. Significant events while inpatient: ' + inpatientEvents;
+    bg += '.';
+    n.push(bg);
+  }
+
+  var hx = v('pertinent-hx');
+  // OASIS risk details
+  if (pathVal === 'ghc') {
+    var riskDetails = [];
+    for (var i = 1; i <= 9; i++) {
+      var btn = document.getElementById('risk-' + i);
+      if (btn && btn.classList.contains('active')) {
+        var rd = v('risk' + i + 'd');
+        if (rd) riskDetails.push(rd);
+      }
+    }
+    if (hx && riskDetails.length > 0) {
+      n.push('Pertinent history: ' + hx + ' ' + riskDetails.join(' '));
+    } else if (hx) {
+      n.push('Pertinent history: ' + hx);
+    } else if (riskDetails.length > 0) {
+      n.push('Pertinent history: ' + riskDetails.join(' '));
+    }
+  } else {
+    if (hx) n.push('Pertinent history: ' + hx);
+  }
+
+  var ass = v('assessment');
+  if (ass) n.push('Assessment: ' + ass);
+
+  var plan = v('plan');
+  if (plan) n.push('Plan: ' + plan);
+
+  var nv = v('next-visit');
+  if (nv) n.push('Next visit scheduled for ' + nv + '.');
+
+  if (pathVal === 'ghc') n.push(line('VISIT SUMMARY/FOLLOW UP NEEDS', v('visitSum')));
+  else n.push(line('VISIT SUMMARY', v('visitSum')));
+
+  // Education blocks
+  if (eduOn.gravity) {
+    var med = eduDetails.gravity ? eduDetails.gravity.med || '' : '';
+    n.push('Patient instructed on administration of ' + med + ' IV via gravity gtt. Patient instructed of aseptic tubing/bag changes to be done every 24 hours. ' + flushNSH);
+  }
+  if (eduOn.ball) {
+    var med = eduDetails.ball ? eduDetails.ball.med || '' : '';
+    n.push('Patient instructed on administration of ' + med + ' IV via infuser ball. ' + flushNSH);
+  }
+  if (eduOn.tpn) {
+    n.push('TPN will be set up for infusion. Patient and caregiver instructed on TPN administration per TPN teaching tool, PICC Port TAC teaching tool, and Sapphire Pump teaching tool.');
+  }
+  if (eduOn.pump) {
+    n.push('Patient instructed of aseptic tubing/bag changes to be done every 24 hours on Monday and Thursdays. ' + flushNSH + ' Patient instructed on troubleshooting Sapphire pump including battery charging, on/off, reset infusion.');
+  }
+  if (eduOn.ivp) {
+    n.push('Patient instructed on IV push administration. ' + flushNSH);
+  }
+  if (eduOn.labs) {
+    n.push('Labs drawn per protocol. Line flushed with 10 ml NS pre lab draw and 20 ml NS post using push-pause method and leaving 1 ml in syringe. Final flush with 5 ml Heparin 100U/ml.');
+  }
+  if (eduOn.picc) {
+    n.push('Site care dressing change per policy using aseptic technique, cleansed with Chloroprep, secured with Statlock, Silverlon disk applied and secured with tegaderm.');
+  }
+
+  if (pathVal === 'ghc') {
+    var rn = v('repName');
+    if (chips.repType === 'legal') n.push('Patient has legally authorized representative, ' + rn + ', and will be involved with their plan of care.');
+    if (chips.repType === 'selected') n.push('Patient has selected ' + rn + ' as their representative and will be involved with their plan of care.');
+    n.push('Goals developed with patient and ' + (rn || 'representative') + ' to include ' + v('goals') + ' and in agreement with the plan of care.');
+    n.push(line('SUPPLIES', v('supplies')));
+  }
+
+  document.getElementById('output').value = n.join('\n\n');
+}
+
+function line(label, value) { return label + ': ' + (value || ''); }
+
+function copyNote() {
+  buildNote();
+  var text = document.getElementById('output').value;
+  if (!text) return;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function() {
+      var b = document.getElementById('copyBtn');
+      b.classList.add('copied'); b.textContent = 'Copied!';
+      setTimeout(function() { b.classList.remove('copied'); b.textContent = 'Copy journal'; }, 2000);
+    }).catch(function() { fallbackCopy(text); });
+  } else fallbackCopy(text);
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  var b = document.getElementById('copyBtn');
+  b.classList.add('copied'); b.textContent = 'Copied!';
+  setTimeout(function() { b.classList.remove('copied'); b.textContent = 'Copy journal'; }, 2000);
+}
+</script>
+</body>
+</html>
