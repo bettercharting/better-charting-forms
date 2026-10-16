@@ -70,7 +70,7 @@
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>How it works:</b> It reads the field name. Your answer must appear in the box below before you go on. On a Mac, Safari often cannot hear you — type, or press <b>Fn Fn</b> (dictation), or use Chrome. On iPad, tap the box then the keyboard mic. Then say <b>next</b> or tap Next.</div>
+    <div class="cue"><b>Driving mode (iPad Safari):</b> Bookmark the GitHub Pages link, tap Start once, then put the iPad down. It reads a field. You answer. Pause when you are done. It goes to the next field by itself. Say <b>skip</b>, <b>repeat</b>, or <b>stop</b> if you need to. Keep the screen on (Auto-Lock → Never) and Allow Microphone.</div>
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
       <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC</button>
@@ -80,10 +80,10 @@
     <div class="voice-status" id="voiceStatus">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="vs-current" id="vsCurrent">Starting…</div>
-      <div id="micWarn" class="mic-warn">The mic is not putting words in the box. Type your answer, or use keyboard dictation (Mac: Fn twice). Chrome on this Mac hears better than Safari.</div>
+      <div id="micWarn" class="mic-warn">I am not hearing you. Use Safari (not Chrome, not Files). Tap Allow for Microphone. Keep this tab open and Auto-Lock off.</div>
       <textarea id="answerBox" placeholder="Your answer for this field goes here. If this stays empty, it is not hearing you."></textarea>
       <div class="vs-heard" id="vsHeard" style="display:none;"><span class="label">Heard:</span><span id="vsHeardText"></span></div>
-      <div class="vs-listening" id="vsListening">🎤 Listening… say your answer, then say next</div>
+      <div class="vs-listening" id="vsListening">🎤 Listening… answer, then pause</div>
       <div class="drive-row">
         <button type="button" class="big-btn green" onclick="tapNext()">Next</button>
         <button type="button" class="big-btn" onclick="tapSkip()">Skip</button>
@@ -263,7 +263,10 @@ function buildFieldList() {
 }
 
 function startVoice() {
-  if (!SR) return;
+  if (!SR) {
+    speak('This iPad Safari cannot use the microphone. Open the page in Safari from your bookmark, not Files.');
+    return;
+  }
   voiceActive = true;
   fieldIdx = 0;
   eduMode = false;
@@ -278,8 +281,16 @@ function startVoice() {
   document.getElementById('stopBtn').style.display = 'block';
   document.getElementById('voiceStatus').classList.add('show');
   document.getElementById('outWrap').classList.remove('show');
+  if (navigator.wakeLock && navigator.wakeLock.request) {
+    navigator.wakeLock.request('screen').catch(function(){});
+  }
   setupRecognition();
-  speak('Voice mode started. Say your answer, then say next to move on.', function() {
+  // Start mic NOW from this tap so iPad Safari allows listening after the prompts.
+  try {
+    recognition.start();
+    recognizing = true;
+  } catch (e) {}
+  speak('Driving mode. I will read each field. Answer, then pause. I will go on by myself. Say skip to skip, or repeat to hear it again. You do not need to look at the screen.', function() {
     nextField();
   });
 }
@@ -287,17 +298,17 @@ function startVoice() {
 function setupRecognition() {
   if (recognition) { try { recognition.abort(); } catch(e) {} }
   recognition = new SR();
-  recognition.continuous = true;
+  recognition.continuous = false;
   recognition.interimResults = true;
   recognition.lang = 'en-US';
-  recognition.maxAlternatives = 3;
+  recognition.maxAlternatives = 1;
 
   recognition.onresult = function(event) {
     if (speaking || advancing || !voiceActive) return;
     var interim = '';
     var finalT = '';
     for (var i = event.resultIndex; i < event.results.length; i++) {
-      var t = event.results[i][0].transcript;
+      var t = event.results[i][0].transcript || '';
       if (event.results[i].isFinal) finalT += t;
       else interim += t;
     }
@@ -308,54 +319,55 @@ function setupRecognition() {
       document.getElementById('micWarn').style.display = 'none';
       document.getElementById('vsHeard').style.display = 'block';
       document.getElementById('vsHeardText').textContent = display;
-      if (!hasCmd(display, ['next','done','continue','go','skip','pass','repeat','again','stop','pause'])) {
-        setBox(stripCmd(display) || display);
-      }
+      setBox(stripCmd(display) || display);
     }
-    handleHeard(display);
   };
 
   recognition.onend = function() {
     recognizing = false;
     document.getElementById('vsListening').classList.remove('show');
-    if (voiceActive && !speaking && !advancing) {
-      setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 250);
-    }
+    if (!voiceActive || speaking || advancing) return;
+    finishUtterance();
   };
 
   recognition.onerror = function(event) {
     recognizing = false;
-    if (event.error === 'no-speech' || event.error === 'aborted') {
-      if (voiceActive && !speaking && !advancing) setTimeout(function() { if (voiceActive) listen(false); }, 300);
-    } else if (event.error === 'not-allowed') {
-      speak('Microphone access denied. Allow microphone in Safari settings.');
+    if (event.error === 'not-allowed') {
+      speak('Microphone is blocked. In Safari, tap a A in the address bar, allow microphone, then tap Start again.');
       stopVoice();
+      return;
+    }
+    if (!voiceActive || speaking || advancing) return;
+    if (event.error === 'no-speech') {
+      setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 300);
     }
   };
 }
 
-function handleHeard(display) {
-  if (speaking || advancing || !voiceActive) return;
-  var lower = (display || '').toLowerCase();
-  if (hasCmd(lower, ['next', 'done', 'continue', 'go'])) {
-    advancing = true;
-    var answer = stripCmd(boxVal() || accumulated || display);
-    accumulated = '';
-    try { recognition.stop(); } catch(e) {}
-    processAnswer(answer);
-  } else if (hasCmd(lower, ['skip', 'pass'])) {
-    advancing = true;
-    accumulated = '';
-    try { recognition.stop(); } catch(e) {}
+function finishUtterance() {
+  if (!voiceActive || speaking || advancing) return;
+  var raw = (boxVal() || accumulated || '').trim();
+  var lower = raw.toLowerCase();
+  if (hasCmd(lower, ['skip', 'pass'])) {
     tapSkip();
-  } else if (hasCmd(lower, ['repeat', 'again'])) {
+    return;
+  }
+  if (hasCmd(lower, ['repeat', 'again'])) {
     accumulated = '';
-    try { recognition.stop(); } catch(e) {}
     speakCurrentPrompt();
-  } else if (hasCmd(lower, ['stop', 'pause'])) {
-    accumulated = '';
-    try { recognition.stop(); } catch(e) {}
+    return;
+  }
+  if (hasCmd(lower, ['stop', 'pause'])) {
     stopVoice();
+    return;
+  }
+  var answer = stripCmd(raw);
+  if (answer) {
+    advancing = true;
+    accumulated = '';
+    processAnswer(answer);
+  } else {
+    setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 280);
   }
 }
 
@@ -379,24 +391,18 @@ function tapSkip() {
 }
 
 function listen(resetHeard) {
-  if (!voiceActive || !recognition) {
-    focusBox();
-    return;
-  }
+  if (!voiceActive || !recognition) return;
   if (speaking || advancing) return;
   if (recognizing) return;
-  if (resetHeard) {
-    clearBox();
-  }
+  if (resetHeard) clearBox();
   listenStartedAt = Date.now();
   document.getElementById('vsListening').classList.add('show');
-  focusBox();
   try {
     recognition.start();
     recognizing = true;
   } catch(e) {
     recognizing = false;
-    setTimeout(function() { if (voiceActive && !speaking) listen(false); }, 500);
+    setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 400);
   }
   setTimeout(function(){
     if (voiceActive && !gotSpeech && Date.now() - listenStartedAt > 5000) {
@@ -407,23 +413,24 @@ function listen(resetHeard) {
 
 function speak(text, after) {
   speaking = true;
-  try { if (recognition) recognition.stop(); } catch(e) {}
+  try { if (recognition) recognition.abort(); } catch(e) {}
+  var finished = false;
+  function done() {
+    if (finished) return;
+    finished = true;
+    speaking = false;
+    setTimeout(function() { if (after) after(); }, 550);
+  }
   if (synth) {
     synth.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.rate = 1.0;
-    u.onend = function() {
-      speaking = false;
-      if (after) after();
-    };
-    u.onerror = function() {
-      speaking = false;
-      if (after) after();
-    };
+    u.onend = done;
+    u.onerror = done;
     synth.speak(u);
+    setTimeout(done, Math.max(3500, (text.length * 90) + 1200));
   } else {
-    speaking = false;
-    if (after) after();
+    done();
   }
 }
 
@@ -545,17 +552,20 @@ function askEducation() {
   var pct = Math.round(((fields.length + eduIdx) / (fields.length + eduTypes.length)) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('vsCurrent').textContent = 'Add ' + e.name + ' education?';
-  speak('Add ' + e.name + ' education? Say yes or no, then next.', function() { listen(true); });
+  speak('Add ' + e.name + ' education? Yes or no.', function() { listen(true); });
 }
 
 function finishVoice() {
+  voiceActive = false;
+  recognizing = false;
+  try { if (recognition) recognition.abort(); } catch(e) {}
   document.getElementById('progressFill').style.width = '100%';
   document.getElementById('vsCurrent').textContent = 'Done!';
   document.getElementById('vsListening').classList.remove('show');
   document.getElementById('vsHeard').style.display = 'none';
   buildNote();
   document.getElementById('outWrap').classList.add('show');
-  speak('Journal note complete. Tap copy journal when you arrive.');
+  speak('Journal note complete. When you arrive, copy it into the chart.');
 }
 
 function stopVoice() {
