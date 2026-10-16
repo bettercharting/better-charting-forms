@@ -66,6 +66,9 @@
   .edu-grid { display: flex; flex-wrap: wrap; gap: 8px; }
   .edu-chip { padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; background: #fff; font-size: 14px; font-weight: 700; color: var(--grey); cursor: pointer; }
   .edu-chip.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .oasis-chip { font-size: 13px; font-weight: 600; text-align: left; line-height: 1.25; flex: 1 1 46%; min-width: 140px; }
+  .oasis-chip.active { border-color: var(--blue-border); background: var(--blue-light); color: var(--blue); }
+  #oasisWrap { display: none; margin: 0 0 16px; }
   #setupPanel.hide { display: none; }
 </style>
 </head>
@@ -77,7 +80,7 @@
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>Driving mode (iPad Safari):</b> Before you drive, tap PCI or GHC and tap any extra teaching to include. Then tap Start once and put the iPad down. It reads a field. You answer. Pause when you are done — it waits a beat, then goes on. Say <b>skip</b>, <b>repeat</b>, or <b>stop</b> if you need to.</div>
+    <div class="cue"><b>Driving mode (iPad Safari):</b> Tap PCI or GHC. Tap extra teaching to include. On GHC, also tap the OASIS risks that apply. Then tap Start once and drive. Pause when you are done with each answer — it waits a beat, then goes on.</div>
     <div id="setupPanel">
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
@@ -94,6 +97,21 @@
         <button type="button" class="edu-chip" data-edu="ivp" onclick="toggleEdu('ivp', this)">IV push</button>
         <button type="button" class="edu-chip" data-edu="labs" onclick="toggleEdu('labs', this)">Labs</button>
         <button type="button" class="edu-chip" data-edu="picc" onclick="toggleEdu('picc', this)">PICC care</button>
+      </div>
+    </div>
+    <div class="edu-wrap" id="oasisWrap">
+      <h3>OASIS risk factors — tap which to include (GHC)</h3>
+      <p>Only tapped items will be prompted while driving. You will be asked for the supporting detail. That detail still goes into pertinent history.</p>
+      <div class="edu-grid">
+        <button type="button" class="edu-chip oasis-chip" data-risk="1" onclick="toggleRisk(1, this)">Falls 2+ or any injury (12 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="2" onclick="toggleRisk(2, this)">Weight loss 10+ lb (12 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="3" onclick="toggleRisk(3, this)">Hospitalizations 2+ (6 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="4" onclick="toggleRisk(4, this)">ED visits 2+ (6 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="5" onclick="toggleRisk(5, this)">Mental / behavioral decline (3 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="6" onclick="toggleRisk(6, this)">Difficulty complying (3 mo)</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="7" onclick="toggleRisk(7, this)">Currently 5+ medications</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="8" onclick="toggleRisk(8, this)">Currently reports exhaustion</button>
+        <button type="button" class="edu-chip oasis-chip" data-risk="9" onclick="toggleRisk(9, this)">Other risk not listed</button>
       </div>
     </div>
     <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()" disabled>Select PCI or GHC first</button>
@@ -144,6 +162,18 @@ var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
 var chips = { erRisk: '', repType: '' };
 var eduOn = {};
+var riskOn = {};
+var riskItems = [
+  { n: 1, prompt: 'Falls supporting detail' },
+  { n: 2, prompt: 'Weight loss supporting detail' },
+  { n: 3, prompt: 'Hospitalizations supporting detail' },
+  { n: 4, prompt: 'ED visits supporting detail' },
+  { n: 5, prompt: 'Mental or behavioral decline supporting detail' },
+  { n: 6, prompt: 'Difficulty complying supporting detail' },
+  { n: 7, prompt: 'Five or more medications supporting detail' },
+  { n: 8, prompt: 'Exhaustion supporting detail' },
+  { n: 9, prompt: 'Other risk supporting detail' }
+];
 var eduIdx = 0;
 var eduMode = false;
 var eduTypes = [
@@ -215,10 +245,16 @@ function toggleEdu(key, btn) {
   if (btn) btn.classList.toggle('active', !!eduOn[key]);
 }
 
+function toggleRisk(n, btn) {
+  riskOn[n] = !riskOn[n];
+  if (btn) btn.classList.toggle('active', !!riskOn[n]);
+}
+
 function setPath(p) {
   pathVal = p;
   document.getElementById('btnPci').classList.toggle('active', p === 'pci');
   document.getElementById('btnGhc').classList.toggle('active', p === 'ghc');
+  document.getElementById('oasisWrap').style.display = p === 'ghc' ? 'block' : 'none';
   document.getElementById('startBtn').disabled = false;
   document.getElementById('startBtn').textContent = 'Start Voice — ' + (p === 'pci' ? 'PCI' : 'GHC');
   buildFieldList();
@@ -263,25 +299,17 @@ function buildFieldList() {
   f.push({ id: 'admit-reason', label: 'Reason for admission' });
   f.push({ id: 'inpatient-events', label: 'Significant inpatient events' });
   f.push({ id: 'pertinent-hx', label: 'Pertinent history' });
+  if (pathVal === 'ghc') {
+    for (var r = 0; r < riskItems.length; r++) {
+      if (riskOn[riskItems[r].n]) {
+        f.push({ id: 'risk' + riskItems[r].n + 'd', label: riskItems[r].prompt });
+      }
+    }
+  }
   f.push({ id: 'assessment', label: 'Assessment — outliers and notable findings' });
   f.push({ id: 'plan', label: 'Plan of care' });
   f.push({ id: 'next-visit', label: 'Next visit — date and which nurse' });
-  f.push({ id: 'visitSum', label: 'Visit summary' });
   if (pathVal === 'ghc') {
-    var riskLabels = [
-      'History of falls, 2 or more or any fall with injury in past 12 months',
-      'Unintentional weight loss of 10 pounds or more in past 12 months',
-      'Multiple hospitalizations, 2 or more in past 6 months',
-      'Multiple emergency department visits, 2 or more in past 6 months',
-      'Decline in mental, emotional, or behavioral status in past 3 months',
-      'Difficulty complying with medical instructions in past 3 months',
-      'Currently taking 5 or more medications',
-      'Currently reports exhaustion',
-      'Other risks not listed',
-    ];
-    for (var i = 0; i < riskLabels.length; i++) {
-      f.push({ id: 'risk-q-' + (i+1), label: 'OASIS risk: ' + riskLabels[i] + ' — say yes or no', isRisk: true, riskNum: i+1 });
-    }
     f.push({ id: 'repType', label: 'Representative type — say legally authorized or selected', isChip: true });
     f.push({ id: 'repName', label: 'Representative name and relationship' });
     f.push({ id: 'clinMgr', label: 'Clinical manager' });
@@ -301,6 +329,10 @@ function startVoice() {
   eduMode = false;
   eduIdx = 0;
   answers = {};
+  for (var i = 1; i <= 9; i++) {
+    if (riskOn[i]) answers['risk-' + i] = 'yes';
+  }
+  buildFieldList();
   accumulated = '';
   gotSpeech = false;
   speaking = false;
@@ -319,7 +351,7 @@ function startVoice() {
     recognition.start();
     recognizing = true;
   } catch (e) {}
-  speak('Driving mode. I will read each field. Answer, then pause. I will go on by myself. Say skip to skip, or repeat to hear it again. You do not need to look at the screen.', function() {
+  speak('Driving mode. Answer, then pause. I will go on by myself.', function() {
     nextField();
   });
 }
@@ -742,6 +774,10 @@ function fallbackCopy(text) {
   b.classList.add('copied'); b.textContent = 'Copied!';
   setTimeout(function() { b.classList.remove('copied'); b.textContent = 'Copy journal'; }, 2000);
 }
+(function () {
+  var q = (location.search + location.hash).toLowerCase();
+  if (q.indexOf('ghc') >= 0) setPath('ghc');
+})();
 </script>
 </body>
 </html>
