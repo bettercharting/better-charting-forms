@@ -57,6 +57,9 @@
   .field-log .fl-item { font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--grey); }
   .field-log .fl-item .fl-label { font-weight: 700; color: var(--blue); }
   .no-speech { background: #fff3cd; border: 2px solid #e0b000; border-radius: 8px; padding: 12px; font-size: 14px; color: #7a5c00; margin-bottom: 12px; }
+  #answerBox { width: 100%; min-height: 90px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 10px; font-size: 18px; line-height: 1.4; margin: 10px 0; background: #fff; color: #172033; }
+  #answerBox:focus { outline: none; box-shadow: 0 0 0 3px rgba(47,128,192,.25); }
+  .mic-warn { display: none; background: #fff3cd; border: 1px solid #e0b000; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #7a5c00; margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -67,7 +70,7 @@
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start. It reads the field name. Speak your answer, then say <b>"next"</b> (or tap Next). Say <b>"skip"</b> to leave it blank. Say <b>"repeat"</b> to hear it again.</div>
+    <div class="cue"><b>How it works:</b> It reads the field name. Your answer must appear in the box below before you go on. On a Mac, Safari often cannot hear you — type, or press <b>Fn Fn</b> (dictation), or use Chrome. On iPad, tap the box then the keyboard mic. Then say <b>next</b> or tap Next.</div>
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
       <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC</button>
@@ -77,6 +80,8 @@
     <div class="voice-status" id="voiceStatus">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="vs-current" id="vsCurrent">Starting…</div>
+      <div id="micWarn" class="mic-warn">The mic is not putting words in the box. Type your answer, or use keyboard dictation (Mac: Fn twice). Chrome on this Mac hears better than Safari.</div>
+      <textarea id="answerBox" placeholder="Your answer for this field goes here. If this stays empty, it is not hearing you."></textarea>
       <div class="vs-heard" id="vsHeard" style="display:none;"><span class="label">Heard:</span><span id="vsHeardText"></span></div>
       <div class="vs-listening" id="vsListening">🎤 Listening… say your answer, then say next</div>
       <div class="drive-row">
@@ -108,6 +113,8 @@ var advancing = false;
 var accumulated = '';
 var answers = {};
 var detailNum = 0;
+var gotSpeech = false;
+var listenStartedAt = 0;
 var synth = window.speechSynthesis;
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
@@ -157,6 +164,26 @@ function hasCmd(text, words){
 }
 function stripCmd(text){
   return (text || '').replace(/\b(next|done|continue|go|skip|pass|repeat|again|stop|pause)\b\.?/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+function boxVal(){
+  var el = document.getElementById('answerBox');
+  return el ? el.value.trim() : '';
+}
+function setBox(text){
+  var el = document.getElementById('answerBox');
+  if (el) el.value = text || '';
+}
+function clearBox(){
+  setBox('');
+  accumulated = '';
+  var h = document.getElementById('vsHeardText');
+  if (h) h.textContent = '';
+  document.getElementById('vsHeard').style.display = 'none';
+}
+function focusBox(){
+  var el = document.getElementById('answerBox');
+  if (!el) return;
+  try { el.focus(); } catch(e) {}
 }
 
 function setPath(p) {
@@ -244,6 +271,7 @@ function startVoice() {
   eduOn = {};
   answers = {};
   accumulated = '';
+  gotSpeech = false;
   speaking = false;
   advancing = false;
   document.getElementById('startBtn').style.display = 'none';
@@ -276,8 +304,13 @@ function setupRecognition() {
     if (finalT) { accumulated += (accumulated ? ' ' : '') + finalT.trim(); }
     var display = (accumulated + ' ' + interim).trim();
     if (display) {
+      gotSpeech = true;
+      document.getElementById('micWarn').style.display = 'none';
       document.getElementById('vsHeard').style.display = 'block';
       document.getElementById('vsHeardText').textContent = display;
+      if (!hasCmd(display, ['next','done','continue','go','skip','pass','repeat','again','stop','pause'])) {
+        setBox(stripCmd(display) || display);
+      }
     }
     handleHeard(display);
   };
@@ -306,7 +339,7 @@ function handleHeard(display) {
   var lower = (display || '').toLowerCase();
   if (hasCmd(lower, ['next', 'done', 'continue', 'go'])) {
     advancing = true;
-    var answer = stripCmd(accumulated || display);
+    var answer = stripCmd(boxVal() || accumulated || display);
     accumulated = '';
     try { recognition.stop(); } catch(e) {}
     processAnswer(answer);
@@ -329,7 +362,7 @@ function handleHeard(display) {
 function tapNext() {
   if (!voiceActive || advancing) return;
   advancing = true;
-  var answer = stripCmd(accumulated || (document.getElementById('vsHeardText').textContent || ''));
+  var answer = stripCmd(boxVal() || accumulated);
   accumulated = '';
   try { if (recognition) recognition.stop(); } catch(e) {}
   processAnswer(answer);
@@ -346,15 +379,18 @@ function tapSkip() {
 }
 
 function listen(resetHeard) {
-  if (!voiceActive || !recognition) return;
+  if (!voiceActive || !recognition) {
+    focusBox();
+    return;
+  }
   if (speaking || advancing) return;
   if (recognizing) return;
   if (resetHeard) {
-    accumulated = '';
-    document.getElementById('vsHeard').style.display = 'none';
-    document.getElementById('vsHeardText').textContent = '';
+    clearBox();
   }
+  listenStartedAt = Date.now();
   document.getElementById('vsListening').classList.add('show');
+  focusBox();
   try {
     recognition.start();
     recognizing = true;
@@ -362,6 +398,11 @@ function listen(resetHeard) {
     recognizing = false;
     setTimeout(function() { if (voiceActive && !speaking) listen(false); }, 500);
   }
+  setTimeout(function(){
+    if (voiceActive && !gotSpeech && Date.now() - listenStartedAt > 5000) {
+      document.getElementById('micWarn').style.display = 'block';
+    }
+  }, 6000);
 }
 
 function speak(text, after) {
@@ -414,6 +455,7 @@ function nextField() {
   document.getElementById('vsCurrent').textContent = f.label;
   document.getElementById('vsHeard').style.display = 'none';
   document.getElementById('vsHeardText').textContent = '';
+  clearBox();
   speak(f.label, function() { listen(true); });
 }
 
