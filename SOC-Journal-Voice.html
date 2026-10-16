@@ -60,22 +60,44 @@
   #answerBox { width: 100%; min-height: 90px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 10px; font-size: 18px; line-height: 1.4; margin: 10px 0; background: #fff; color: #172033; }
   #answerBox:focus { outline: none; box-shadow: 0 0 0 3px rgba(47,128,192,.25); }
   .mic-warn { display: none; background: #fff3cd; border: 1px solid #e0b000; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #7a5c00; margin-bottom: 10px; }
+  .edu-wrap { margin: 0 0 16px; }
+  .edu-wrap h3 { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+  .edu-wrap p { font-size: 12px; color: var(--grey); margin-bottom: 8px; line-height: 1.4; }
+  .edu-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .edu-chip { padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; background: #fff; font-size: 14px; font-weight: 700; color: var(--grey); cursor: pointer; }
+  .edu-chip.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  #setupPanel.hide { display: none; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <h1>SOC Journal — Voice Mode</h1>
-    <div class="sub">Tap PCI or GHC, tap Start, then talk. Say "next" to move on. Hands free.</div>
+    <div class="sub">Pick PCI or GHC, tap extra teaching, tap Start, then drive. Pause when you are done with each answer.</div>
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>Driving mode (iPad Safari):</b> Bookmark the GitHub Pages link, tap Start once, then put the iPad down. It reads a field. You answer. Pause when you are done. It goes to the next field by itself. Say <b>skip</b>, <b>repeat</b>, or <b>stop</b> if you need to. Keep the screen on (Auto-Lock → Never) and Allow Microphone.</div>
+    <div class="cue"><b>Driving mode (iPad Safari):</b> Before you drive, tap PCI or GHC and tap any extra teaching to include. Then tap Start once and put the iPad down. It reads a field. You answer. Pause when you are done — it waits a beat, then goes on. Say <b>skip</b>, <b>repeat</b>, or <b>stop</b> if you need to.</div>
+    <div id="setupPanel">
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
       <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC</button>
     </div>
+    <div class="edu-wrap">
+      <h3>Extra teaching — tap to add before you start</h3>
+      <p>Only tapped items go into the note. You will not be asked these while driving.</p>
+      <div class="edu-grid">
+        <button type="button" class="edu-chip" data-edu="gravity" onclick="toggleEdu('gravity', this)">Gravity drip</button>
+        <button type="button" class="edu-chip" data-edu="ball" onclick="toggleEdu('ball', this)">Infuser ball</button>
+        <button type="button" class="edu-chip" data-edu="tpn" onclick="toggleEdu('tpn', this)">TPN</button>
+        <button type="button" class="edu-chip" data-edu="pump" onclick="toggleEdu('pump', this)">Tubing / pump</button>
+        <button type="button" class="edu-chip" data-edu="ivp" onclick="toggleEdu('ivp', this)">IV push</button>
+        <button type="button" class="edu-chip" data-edu="labs" onclick="toggleEdu('labs', this)">Labs</button>
+        <button type="button" class="edu-chip" data-edu="picc" onclick="toggleEdu('picc', this)">PICC care</button>
+      </div>
+    </div>
     <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()" disabled>Select PCI or GHC first</button>
+    </div>
     <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
     <div class="voice-status" id="voiceStatus">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
@@ -115,6 +137,8 @@ var answers = {};
 var detailNum = 0;
 var gotSpeech = false;
 var listenStartedAt = 0;
+var pendingCommit = null;
+var PAUSE_MS = 1200;
 var synth = window.speechSynthesis;
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
@@ -184,6 +208,11 @@ function focusBox(){
   var el = document.getElementById('answerBox');
   if (!el) return;
   try { el.focus(); } catch(e) {}
+}
+
+function toggleEdu(key, btn) {
+  eduOn[key] = !eduOn[key];
+  if (btn) btn.classList.toggle('active', !!eduOn[key]);
 }
 
 function setPath(p) {
@@ -271,12 +300,12 @@ function startVoice() {
   fieldIdx = 0;
   eduMode = false;
   eduIdx = 0;
-  eduOn = {};
   answers = {};
   accumulated = '';
   gotSpeech = false;
   speaking = false;
   advancing = false;
+  document.getElementById('setupPanel').classList.add('hide');
   document.getElementById('startBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = 'block';
   document.getElementById('voiceStatus').classList.add('show');
@@ -316,6 +345,7 @@ function setupRecognition() {
     var display = (accumulated + ' ' + interim).trim();
     if (display) {
       gotSpeech = true;
+      if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
       document.getElementById('micWarn').style.display = 'none';
       document.getElementById('vsHeard').style.display = 'block';
       document.getElementById('vsHeardText').textContent = display;
@@ -339,9 +369,27 @@ function setupRecognition() {
     }
     if (!voiceActive || speaking || advancing) return;
     if (event.error === 'no-speech') {
-      setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 300);
+      if (boxVal() || accumulated) scheduleCommit();
+      else setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 300);
     }
   };
+}
+
+function scheduleCommit() {
+  if (pendingCommit) clearTimeout(pendingCommit);
+  pendingCommit = setTimeout(function() {
+    pendingCommit = null;
+    if (!voiceActive || speaking || advancing) return;
+    var answer = stripCmd(boxVal() || accumulated);
+    if (!answer) {
+      listen(false);
+      return;
+    }
+    advancing = true;
+    accumulated = '';
+    try { if (recognition) recognition.abort(); } catch(e) {}
+    processAnswer(answer);
+  }, PAUSE_MS);
 }
 
 function finishUtterance() {
@@ -349,23 +397,25 @@ function finishUtterance() {
   var raw = (boxVal() || accumulated || '').trim();
   var lower = raw.toLowerCase();
   if (hasCmd(lower, ['skip', 'pass'])) {
+    if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
     tapSkip();
     return;
   }
   if (hasCmd(lower, ['repeat', 'again'])) {
+    if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
     accumulated = '';
     speakCurrentPrompt();
     return;
   }
   if (hasCmd(lower, ['stop', 'pause'])) {
+    if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
     stopVoice();
     return;
   }
   var answer = stripCmd(raw);
   if (answer) {
-    advancing = true;
-    accumulated = '';
-    processAnswer(answer);
+    listen(false);
+    scheduleCommit();
   } else {
     setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 280);
   }
@@ -446,18 +496,12 @@ function speakCurrentPrompt() {
 
 function nextField() {
   if (!voiceActive) return;
-  if (!eduMode && fieldIdx >= fields.length) {
-    eduMode = true;
-    eduIdx = 0;
-    askEducation();
-    return;
-  }
-  if (eduMode) {
-    askEducation();
+  if (fieldIdx >= fields.length) {
+    finishVoice();
     return;
   }
   var f = fields[fieldIdx];
-  var pct = Math.round((fieldIdx / (fields.length + eduTypes.length)) * 100);
+  var pct = Math.round((fieldIdx / fields.length) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('vsCurrent').textContent = f.label;
   document.getElementById('vsHeard').style.display = 'none';
@@ -573,6 +617,7 @@ function stopVoice() {
   if (recognition) { try { recognition.stop(); } catch(e) {} }
   if (synth) synth.cancel();
   recognizing = false;
+  document.getElementById('setupPanel').classList.remove('hide');
   document.getElementById('startBtn').style.display = 'block';
   document.getElementById('stopBtn').style.display = 'none';
   document.getElementById('vsListening').classList.remove('show');
@@ -582,7 +627,10 @@ function stopVoice() {
 
 function restartVoice() {
   document.getElementById('outWrap').classList.remove('show');
-  startVoice();
+  document.getElementById('voiceStatus').classList.remove('show');
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('setupPanel').classList.remove('hide');
+  document.getElementById('startBtn').style.display = 'block';
 }
 
 function addLog(label, value) {
@@ -623,6 +671,7 @@ function buildNote() {
   n.push('LABS: ' + v('labs') + '                DUE ON: ' + v('labsDue'));
   n.push(line('IMMEDIATE NEEDS', v('immNeed')));
   n.push(line('VENOUS ACCESS DEVICE', v('vad')));
+  n.push(pathVal === 'ghc' ? 'VISIT SUMMARY/FOLLOW UP NEEDS:' : 'VISIT SUMMARY:');
   var rep = v('rep-narr'), goal = v('goal');
   n.push('Advance care plan established involving the patient and their representative' + (rep ? ' ' + rep : '') + ', including the medical treatment preferences, understanding of illness, interventions, goals and discharge plans. Patient/caregiver states their goal is to ' + (goal || '') + '.');
   var sit = v('situation'); if (sit) n.push(sit);
@@ -652,8 +701,7 @@ function buildNote() {
   var ass = v('assessment'); if (ass) n.push('Assessment: ' + ass);
   var plan = v('plan'); if (plan) n.push('Plan: ' + plan);
   var nv = v('next-visit'); if (nv) n.push('Next visit scheduled for ' + nv + '.');
-  if (pathVal === 'ghc') n.push(line('VISIT SUMMARY/FOLLOW UP NEEDS', v('visitSum')));
-  else n.push(line('VISIT SUMMARY', v('visitSum')));
+  var vs = v('visitSum'); if (vs) n.push(vs);
   if (eduOn.gravity) n.push('Patient instructed on administration of IV via gravity gtt. Patient instructed of aseptic tubing/bag changes to be done every 24 hours. ' + flushNSH);
   if (eduOn.ball) n.push('Patient instructed on administration of IV via infuser ball. ' + flushNSH);
   if (eduOn.tpn) n.push('TPN will be set up for infusion. Patient and caregiver instructed on TPN administration per TPN teaching tool, PICC Port TAC teaching tool, and Sapphire Pump teaching tool.');
