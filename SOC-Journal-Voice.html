@@ -83,7 +83,7 @@
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
 
-    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start Voice. The page reads each prompt aloud. You speak your answer. It enters it and moves to the next field. Say "skip" to skip a field. Say "repeat" to hear it again. At the end it says "done" and the note is ready to copy.</div>
+    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start Voice. The page reads each prompt aloud. You speak your answer, then say <b>"next"</b> to move on. Say <b>"skip"</b> to skip a field. Say <b>"repeat"</b> to hear it again. At the end it says "done" and the note is ready to copy.</div>
 
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI<span style="display:block;font-size:11px;font-weight:400;margin-top:2px;">Private insurance</span></button>
@@ -255,9 +255,11 @@ function startVoice() {
   document.getElementById('outWrap').classList.remove('show');
 
   recognition = new SR();
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = true;
   recognition.lang = 'en-US';
+
+  var accumulated = ''; // accumulates all speech for this field
 
   recognition.onresult = function(event) {
     var interim = '';
@@ -269,25 +271,66 @@ function startVoice() {
         interim += event.results[i][0].transcript;
       }
     }
-    if (interim) {
-      document.getElementById('vsHeard').style.display = 'block';
-      document.getElementById('vsHeardText').textContent = interim;
-    }
+    // Accumulate final results
     if (final) {
-      currentAnswer = final.trim();
+      accumulated += ' ' + final.trim();
+      accumulated = accumulated.trim();
+    }
+    // Show what we've heard so far (final + interim)
+    var displayText = (accumulated + ' ' + interim).trim();
+    if (displayText) {
       document.getElementById('vsHeard').style.display = 'block';
-      document.getElementById('vsHeardText').textContent = currentAnswer;
+      document.getElementById('vsHeardText').textContent = displayText;
+    }
+    // Check for voice commands in the full text
+    var checkText = displayText.toLowerCase();
+    // "next" or "done" or "continue" — enter the answer and move on
+    if (checkText.indexOf(' next') >= 0 || checkText.endsWith('next') || checkText.indexOf(' done') >= 0 || checkText.endsWith('done') || checkText.indexOf(' continue') >= 0 || checkText.endsWith('continue')) {
+      // Remove the command word from the answer
+      var answer = accumulated.replace(/\s*(next|done|continue)\s*$/i, '').trim();
+      currentAnswer = answer;
+      accumulated = '';
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      processAnswer(answer || '');
+      return;
+    }
+    // "skip" — skip without entering anything
+    if (checkText.indexOf(' skip') >= 0 || checkText.endsWith('skip')) {
+      accumulated = '';
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      currentAnswer = '';
+      if (!eduMode) { fieldIdx++; }
+      else { eduIdx++; }
+      setTimeout(nextField, 200);
+      return;
+    }
+    // "repeat" — hear the prompt again
+    if (checkText.indexOf(' repeat') >= 0 || checkText.endsWith('repeat') || checkText.indexOf(' again') >= 0 || checkText.endsWith('again')) {
+      accumulated = '';
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      if (!eduMode) {
+        var f2 = fields[fieldIdx];
+        speakAndShow(f2.prompt, function() { listen(); });
+      } else {
+        askEducation();
+      }
+      return;
+    }
+    // "stop" — stop voice mode
+    if (checkText.indexOf(' stop') >= 0 || checkText.endsWith('stop') || checkText.indexOf(' pause') >= 0 || checkText.endsWith('pause')) {
+      accumulated = '';
+      stopVoice();
+      return;
     }
   };
 
   recognition.onend = function() {
     recognizing = false;
     document.getElementById('vsListening').classList.remove('show');
-    if (currentAnswer && voiceActive) {
-      processAnswer(currentAnswer);
-    } else if (voiceActive) {
-      // No answer detected — retry listening
-      setTimeout(function() { if (voiceActive) listen(); }, 300);
+    // Keep listening if voice is still active (continuous mode)
+    if (voiceActive) {
+      accumulated = accumulated || '';
+      setTimeout(function() { if (voiceActive) listen(); }, 200);
     }
   };
 
@@ -302,7 +345,7 @@ function startVoice() {
   };
 
   // Start
-  speakAndShow('Voice mode started. Say skip to move to the next field. Say repeat to hear the prompt again.', function() {
+  speakAndShow('Voice mode started. Say your answer, then say next to move on. Say skip to skip a field. Say repeat to hear the prompt again.', function() {
     nextField();
   });
 }
@@ -362,15 +405,16 @@ function nextField() {
 function processAnswer(answer) {
   var lower = answer.toLowerCase();
 
-  // Voice commands
-  if (lower === 'skip' || lower === 'next' || lower === 'pass') {
-    currentAnswer = '';
+  // If answer is empty, just move on (user said "next" without answering)
+  if (!answer) {
     if (!eduMode) fieldIdx++;
     else eduIdx++;
     setTimeout(nextField, 200);
     return;
   }
-  if (lower === 'repeat' || lower === 'again' || lower === 'say it again') {
+
+  // "repeat" — hear the prompt again
+  if (lower === 'repeat' || lower === 'again') {
     if (!eduMode) {
       var f = fields[fieldIdx];
       speakAndShow(f.prompt, function() { listen(); });
@@ -379,7 +423,7 @@ function processAnswer(answer) {
     }
     return;
   }
-  if (lower === 'stop' || lower === 'stop voice' || lower === 'pause') {
+  if (lower === 'stop' || lower === 'pause') {
     stopVoice();
     return;
   }
