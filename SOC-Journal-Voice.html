@@ -40,6 +40,9 @@
   .big-btn.red { background: #c0392b; }
   .big-btn:active { transform: scale(.98); }
   .big-btn:disabled { opacity: .5; }
+  .drive-row { display: none; gap: 10px; margin: 12px 0; }
+  .voice-status.show .drive-row { display: flex; }
+  .drive-row .big-btn { margin-bottom: 0; }
   .out-wrap { display: none; margin-top: 16px; }
   .out-wrap.show { display: block; }
   #output { width: 100%; min-height: 200px; padding: 12px; border: 2px solid var(--blue-border); border-radius: 8px; background: #f4f8fc; font-size: 14px; line-height: 1.55; }
@@ -64,7 +67,7 @@
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start. It reads each prompt. You speak your answer, then say <b>"next"</b> to move on. Say <b>"skip"</b> to leave a field blank. Say <b>"repeat"</b> to hear it again.</div>
+    <div class="cue"><b>How it works:</b> Pick PCI or GHC, tap Start. It reads the field name. Speak your answer, then say <b>"next"</b> (or tap Next). Say <b>"skip"</b> to leave it blank. Say <b>"repeat"</b> to hear it again.</div>
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
       <button type="button" class="path-btn ghc" id="btnGhc" onclick="setPath('ghc')">GHC</button>
@@ -75,8 +78,13 @@
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="vs-current" id="vsCurrent">Starting…</div>
       <div class="vs-heard" id="vsHeard" style="display:none;"><span class="label">Heard:</span><span id="vsHeardText"></span></div>
-      <div class="vs-listening" id="vsListening">🎤 Listening…</div>
+      <div class="vs-listening" id="vsListening">🎤 Listening… say your answer, then say next</div>
+      <div class="drive-row">
+        <button type="button" class="big-btn green" onclick="tapNext()">Next</button>
+        <button type="button" class="big-btn" onclick="tapSkip()">Skip</button>
+      </div>
       <div class="field-log" id="fieldLog"></div>
+      <div id="store" style="display:none;"></div>
     </div>
     <div class="out-wrap" id="outWrap">
       <label style="font-size:13px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px;">Journal note — ready to copy</label>
@@ -95,7 +103,11 @@ var fields = [];
 var fieldIdx = 0;
 var voiceActive = false;
 var recognizing = false;
+var speaking = false;
+var advancing = false;
 var accumulated = '';
+var answers = {};
+var detailNum = 0;
 var synth = window.speechSynthesis;
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
@@ -116,7 +128,36 @@ var flushNSH = 'Patient instructed on VAD flushed with NS 10 ml pre and post med
 
 if (!SR) document.getElementById('noSpeech').style.display = 'block';
 
-function v(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function v(id){
+  if (answers[id]) return String(answers[id]).trim();
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+function setAns(id, val){
+  answers[id] = val || '';
+  var store = document.getElementById('store');
+  if (!store) return;
+  var el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('input');
+    el.type = 'hidden';
+    el.id = id;
+    store.appendChild(el);
+  }
+  el.value = val || '';
+}
+function hasCmd(text, words){
+  var t = (text || '').toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return false;
+  for (var i = 0; i < words.length; i++) {
+    var w = words[i];
+    if (t === w || t.endsWith(' ' + w) || t.indexOf(' ' + w + ' ') >= 0) return true;
+  }
+  return false;
+}
+function stripCmd(text){
+  return (text || '').replace(/\b(next|done|continue|go|skip|pass|repeat|again|stop|pause)\b\.?/gi, ' ').replace(/\s+/g, ' ').trim();
+}
 
 function setPath(p) {
   pathVal = p;
@@ -201,7 +242,10 @@ function startVoice() {
   eduMode = false;
   eduIdx = 0;
   eduOn = {};
+  answers = {};
   accumulated = '';
+  speaking = false;
+  advancing = false;
   document.getElementById('startBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = 'block';
   document.getElementById('voiceStatus').classList.add('show');
@@ -213,13 +257,15 @@ function startVoice() {
 }
 
 function setupRecognition() {
-  if (recognition) { try { recognition.stop(); } catch(e) {} }
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
   recognition = new SR();
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.lang = 'en-US';
+  recognition.maxAlternatives = 3;
 
   recognition.onresult = function(event) {
+    if (speaking || advancing || !voiceActive) return;
     var interim = '';
     var finalT = '';
     for (var i = event.resultIndex; i < event.results.length; i++) {
@@ -233,41 +279,21 @@ function setupRecognition() {
       document.getElementById('vsHeard').style.display = 'block';
       document.getElementById('vsHeardText').textContent = display;
     }
-    var lower = display.toLowerCase().trim();
-    // Check for command words at the END of what was said
-    if (lower.endsWith('next') || lower.endsWith('done') || lower.endsWith('continue') || lower.endsWith('next.') || lower.endsWith('done.')) {
-      var answer = accumulated.replace(/\s*\b(next|done|continue)\b\.?\s*$/i, '').trim();
-      accumulated = '';
-      try { recognition.stop(); } catch(e) {}
-      processAnswer(answer);
-    } else if (lower.endsWith('skip') || lower.endsWith('skip.') || lower.endsWith('pass') || lower.endsWith('pass.')) {
-      accumulated = '';
-      try { recognition.stop(); } catch(e) {}
-      addLog(fields[fieldIdx] ? fields[fieldIdx].label : 'skipped', '(skipped)');
-      if (!eduMode) fieldIdx++; else eduIdx++;
-      setTimeout(nextField, 200);
-    } else if (lower.endsWith('repeat') || lower.endsWith('repeat.') || lower.endsWith('again') || lower.endsWith('again.')) {
-      accumulated = '';
-      try { recognition.stop(); } catch(e) {}
-      speakCurrentPrompt();
-    } else if (lower.endsWith('stop') || lower.endsWith('stop.') || lower.endsWith('pause') || lower.endsWith('pause.')) {
-      accumulated = '';
-      try { recognition.stop(); } catch(e) {}
-      stopVoice();
-    }
+    handleHeard(display);
   };
 
   recognition.onend = function() {
     recognizing = false;
     document.getElementById('vsListening').classList.remove('show');
-    if (voiceActive) {
-      setTimeout(function() { if (voiceActive) listen(); }, 200);
+    if (voiceActive && !speaking && !advancing) {
+      setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 250);
     }
   };
 
   recognition.onerror = function(event) {
-    if (event.error === 'no-speech') {
-      setTimeout(function() { if (voiceActive) listen(); }, 300);
+    recognizing = false;
+    if (event.error === 'no-speech' || event.error === 'aborted') {
+      if (voiceActive && !speaking && !advancing) setTimeout(function() { if (voiceActive) listen(false); }, 300);
     } else if (event.error === 'not-allowed') {
       speak('Microphone access denied. Allow microphone in Safari settings.');
       stopVoice();
@@ -275,30 +301,87 @@ function setupRecognition() {
   };
 }
 
-function listen() {
-  if (!voiceActive || !recognition) return;
-  if (recognizing) return;
+function handleHeard(display) {
+  if (speaking || advancing || !voiceActive) return;
+  var lower = (display || '').toLowerCase();
+  if (hasCmd(lower, ['next', 'done', 'continue', 'go'])) {
+    advancing = true;
+    var answer = stripCmd(accumulated || display);
+    accumulated = '';
+    try { recognition.stop(); } catch(e) {}
+    processAnswer(answer);
+  } else if (hasCmd(lower, ['skip', 'pass'])) {
+    advancing = true;
+    accumulated = '';
+    try { recognition.stop(); } catch(e) {}
+    tapSkip();
+  } else if (hasCmd(lower, ['repeat', 'again'])) {
+    accumulated = '';
+    try { recognition.stop(); } catch(e) {}
+    speakCurrentPrompt();
+  } else if (hasCmd(lower, ['stop', 'pause'])) {
+    accumulated = '';
+    try { recognition.stop(); } catch(e) {}
+    stopVoice();
+  }
+}
+
+function tapNext() {
+  if (!voiceActive || advancing) return;
+  advancing = true;
+  var answer = stripCmd(accumulated || (document.getElementById('vsHeardText').textContent || ''));
   accumulated = '';
+  try { if (recognition) recognition.stop(); } catch(e) {}
+  processAnswer(answer);
+}
+
+function tapSkip() {
+  if (!voiceActive) return;
+  advancing = true;
+  accumulated = '';
+  try { if (recognition) recognition.stop(); } catch(e) {}
+  addLog(fields[fieldIdx] ? fields[fieldIdx].label : 'skipped', '(skipped)');
+  if (!eduMode) fieldIdx++; else eduIdx++;
+  setTimeout(function(){ advancing = false; nextField(); }, 200);
+}
+
+function listen(resetHeard) {
+  if (!voiceActive || !recognition) return;
+  if (speaking || advancing) return;
+  if (recognizing) return;
+  if (resetHeard) {
+    accumulated = '';
+    document.getElementById('vsHeard').style.display = 'none';
+    document.getElementById('vsHeardText').textContent = '';
+  }
   document.getElementById('vsListening').classList.add('show');
-  document.getElementById('vsHeard').style.display = 'none';
-  document.getElementById('vsHeardText').textContent = '';
   try {
     recognition.start();
     recognizing = true;
   } catch(e) {
-    setTimeout(function() { if (voiceActive) listen(); }, 500);
+    recognizing = false;
+    setTimeout(function() { if (voiceActive && !speaking) listen(false); }, 500);
   }
 }
 
 function speak(text, after) {
+  speaking = true;
+  try { if (recognition) recognition.stop(); } catch(e) {}
   if (synth) {
     synth.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.rate = 1.0;
-    u.onend = function() { if (after) after(); };
-    u.onerror = function() { if (after) after(); };
+    u.onend = function() {
+      speaking = false;
+      if (after) after();
+    };
+    u.onerror = function() {
+      speaking = false;
+      if (after) after();
+    };
     synth.speak(u);
   } else {
+    speaking = false;
     if (after) after();
   }
 }
@@ -309,7 +392,7 @@ function speakCurrentPrompt() {
   } else if (fieldIdx < fields.length) {
     var f = fields[fieldIdx];
     document.getElementById('vsCurrent').textContent = f.label;
-    speak(f.label, function() { listen(); });
+    speak(f.label, function() { listen(true); });
   }
 }
 
@@ -331,13 +414,22 @@ function nextField() {
   document.getElementById('vsCurrent').textContent = f.label;
   document.getElementById('vsHeard').style.display = 'none';
   document.getElementById('vsHeardText').textContent = '';
-  speak(f.label, function() { listen(); });
+  speak(f.label, function() { listen(true); });
 }
 
 function processAnswer(answer) {
+  advancing = true;
+  if (detailNum) {
+    setAns('risk' + detailNum + 'd', answer || '');
+    addLog('Risk ' + detailNum + ' detail', answer || '(blank)');
+    detailNum = 0;
+    fieldIdx++;
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
+    return;
+  }
   if (!answer) {
     if (!eduMode) fieldIdx++; else eduIdx++;
-    setTimeout(nextField, 200);
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
     return;
   }
   if (eduMode) {
@@ -345,6 +437,7 @@ function processAnswer(answer) {
     return;
   }
   var f = fields[fieldIdx];
+  if (!f) { advancing = false; finishVoice(); return; }
   var lower = answer.toLowerCase();
   if (f.isChip) {
     if (f.id === 'erRisk') {
@@ -355,63 +448,37 @@ function processAnswer(answer) {
       if (lower.indexOf('legal') >= 0) chips.repType = 'legal';
       else if (lower.indexOf('select') >= 0) chips.repType = 'selected';
     }
+    setAns(f.id, answer);
     addLog(f.label, answer);
     fieldIdx++;
-    setTimeout(nextField, 200);
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
     return;
   }
   if (f.isRisk) {
     if (lower.indexOf('yes') >= 0 || lower.indexOf('yeah') >= 0 || lower.indexOf('yep') >= 0) {
-      var btn = document.getElementById('risk-' + f.riskNum);
-      if (btn) btn.classList.add('active');
+      answers['risk-' + f.riskNum] = 'yes';
+      detailNum = f.riskNum;
       addLog(f.label, 'YES — asking for detail');
       speak('What is the supporting detail?', function() {
+        advancing = false;
         listenForDetail(f.riskNum);
       });
       return;
     }
     addLog(f.label, 'no');
     fieldIdx++;
-    setTimeout(nextField, 200);
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
     return;
   }
-  var el = document.getElementById(f.id);
-  if (el) el.value = answer;
+  setAns(f.id, answer);
   addLog(f.label, answer);
   fieldIdx++;
-  setTimeout(nextField, 200);
+  setTimeout(function(){ advancing = false; nextField(); }, 200);
 }
 
 function listenForDetail(num) {
-  var savedOnresult = recognition.onresult;
-  var detailAccumulated = '';
-  recognition.onresult = function(event) {
-    var interim = '';
-    var finalT = '';
-    for (var i = event.resultIndex; i < event.results.length; i++) {
-      var t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) finalT += t;
-      else interim += t;
-    }
-    if (finalT) detailAccumulated += (detailAccumulated ? ' ' : '') + finalT.trim();
-    var display = (detailAccumulated + ' ' + interim).trim();
-    if (display) {
-      document.getElementById('vsHeard').style.display = 'block';
-      document.getElementById('vsHeardText').textContent = display;
-    }
-    var lower = display.toLowerCase().trim();
-    if (lower.endsWith('next') || lower.endsWith('done') || lower.endsWith('next.') || lower.endsWith('done.')) {
-      var detail = detailAccumulated.replace(/\s*\b(next|done)\b\.?\s*$/i, '').trim();
-      recognition.onresult = savedOnresult;
-      try { recognition.stop(); } catch(e) {}
-      var el = document.getElementById('risk' + num + 'd');
-      if (el) el.value = detail;
-      addLog('Risk ' + num + ' detail', detail);
-      fieldIdx++;
-      setTimeout(nextField, 200);
-    }
-  };
-  listen();
+  accumulated = '';
+  listen(true);
 }
 
 function handleEduAnswer(answer) {
@@ -424,7 +491,7 @@ function handleEduAnswer(answer) {
     addLog('Education: ' + e.name, 'skipped');
   }
   eduIdx++;
-  setTimeout(askEducation, 200);
+  setTimeout(function(){ advancing = false; askEducation(); }, 200);
 }
 
 function askEducation() {
@@ -436,7 +503,7 @@ function askEducation() {
   var pct = Math.round(((fields.length + eduIdx) / (fields.length + eduTypes.length)) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('vsCurrent').textContent = 'Add ' + e.name + ' education?';
-  speak('Add ' + e.name + ' education? Say yes or no.', function() { listen(); });
+  speak('Add ' + e.name + ' education? Say yes or no, then next.', function() { listen(true); });
 }
 
 function finishVoice() {
@@ -519,8 +586,7 @@ function buildNote() {
   if (pathVal === 'ghc') {
     var riskDetails = [];
     for (var i = 1; i <= 9; i++) {
-      var btn = document.getElementById('risk-' + i);
-      if (btn && btn.classList.contains('active')) {
+      if (answers['risk-' + i] === 'yes') {
         var rd = v('risk' + i + 'd');
         if (rd) riskDetails.push(rd);
       }
