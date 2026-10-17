@@ -80,7 +80,7 @@
   </div>
   <div class="card">
     <div id="noSpeech" class="no-speech" style="display:none;">Your browser doesn't support voice recognition. Use Safari on iOS 14.5+ or Chrome.</div>
-    <div class="cue"><b>Driving mode (iPad Safari):</b> Tap PCI or GHC. Tap extra teaching to include. On GHC, also tap the OASIS risks that apply. Then tap Start once and drive. Pause when you are done with each answer — it waits a beat, then goes on.</div>
+    <div class="cue"><b>Driving mode (iPad Safari):</b> Tap PCI or GHC. Tap extra teaching to include. On GHC, also tap the OASIS risks that apply. Then tap Start once and drive. Pause when you are done — it waits about 3 seconds, then goes on.</div>
     <div id="setupPanel">
     <div class="path-row">
       <button type="button" class="path-btn pci" id="btnPci" onclick="setPath('pci')">PCI</button>
@@ -156,7 +156,7 @@ var detailNum = 0;
 var gotSpeech = false;
 var listenStartedAt = 0;
 var pendingCommit = null;
-var PAUSE_MS = 1200;
+var PAUSE_MS = 3000;
 var synth = window.speechSynthesis;
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
@@ -307,13 +307,10 @@ function buildFieldList() {
     }
   }
   f.push({ id: 'assessment', label: 'Assessment — outliers and notable findings' });
-  f.push({ id: 'plan', label: 'Plan of care' });
   f.push({ id: 'next-visit', label: 'Next visit — date and which nurse' });
   if (pathVal === 'ghc') {
     f.push({ id: 'repType', label: 'Representative type — say legally authorized or selected', isChip: true });
     f.push({ id: 'repName', label: 'Representative name and relationship' });
-    f.push({ id: 'clinMgr', label: 'Clinical manager' });
-    f.push({ id: 'goals', label: 'Goals developed with patient and representative' });
     f.push({ id: 'supplies', label: 'Supplies' });
   }
   fields = f;
@@ -731,9 +728,6 @@ function buildNote() {
     if (hx) n.push('Pertinent history: ' + hx);
   }
   var ass = v('assessment'); if (ass) n.push('Assessment: ' + ass);
-  var plan = v('plan'); if (plan) n.push('Plan: ' + plan);
-  var nv = v('next-visit'); if (nv) n.push('Next visit scheduled for ' + nv + '.');
-  var vs = v('visitSum'); if (vs) n.push(vs);
   if (eduOn.gravity) n.push('Patient instructed on administration of IV via gravity gtt. Patient instructed of aseptic tubing/bag changes to be done every 24 hours. ' + flushNSH);
   if (eduOn.ball) n.push('Patient instructed on administration of IV via infuser ball. ' + flushNSH);
   if (eduOn.tpn) n.push('TPN will be set up for infusion. Patient and caregiver instructed on TPN administration per TPN teaching tool, PICC Port TAC teaching tool, and Sapphire Pump teaching tool.');
@@ -741,11 +735,11 @@ function buildNote() {
   if (eduOn.ivp) n.push('Patient instructed on IV push administration. ' + flushNSH);
   if (eduOn.labs) n.push('Labs drawn per protocol. Line flushed with 10 ml NS pre lab draw and 20 ml NS post using push-pause method and leaving 1 ml in syringe. Final flush with 5 ml Heparin 100U/ml.');
   if (eduOn.picc) n.push('Site care dressing change per policy using aseptic technique, cleansed with Chloroprep, secured with Statlock, Silverlon disk applied and secured with tegaderm.');
+  var nv = v('next-visit'); if (nv) n.push('Next visit scheduled for ' + nv + '.');
   if (pathVal === 'ghc') {
     var rn = v('repName');
     if (chips.repType === 'legal') n.push('Patient has legally authorized representative, ' + rn + ', and will be involved with their plan of care.');
     if (chips.repType === 'selected') n.push('Patient has selected ' + rn + ' as their representative and will be involved with their plan of care.');
-    n.push('Goals developed with patient and ' + (rn || 'representative') + ' to include ' + v('goals') + ' and in agreement with the plan of care.');
     n.push(line('SUPPLIES', v('supplies')));
   }
   document.getElementById('output').value = n.join('\n\n');
