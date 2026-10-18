@@ -293,7 +293,7 @@
 <div class="container">
   <div class="header">
     <h1>Homebound Statement Builder — Voice</h1>
-    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting</div>
+    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting <span id="ver" style="background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px;margin-left:4px;">v4 • Oct 17</span></div>
   </div>
   <div class="body">
 
@@ -317,7 +317,7 @@
 
     <div class="voice-wrap">
       <div id="noSpeech" class="no-speech">This browser can't do hands-free voice. Use Safari on iPad/iPhone (opened from your bookmark, not Files) or Chrome. You can still tap and type below, or use the 🎤 on your keyboard.</div>
-      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads each prompt aloud — answer, then pause about 3 seconds and it goes on by itself. Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
+      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads the start of each sentence aloud — finish the sentence, then pause about 3 seconds and it goes on by itself. (Check the header says <b>v4</b>; if not, refresh the page.) Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
       <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()">▶ Start Voice</button>
       <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
       <div class="voice-status" id="voiceStatus">
@@ -346,9 +346,9 @@
     <div class="step">
       <div class="step-head"><span class="step-num">1</span><span class="step-title">Diagnosis &amp; effect</span></div>
       <div class="step-q">Main condition? How does it affect them?</div>
-      <span class="lbl">Condition</span>
+      <span class="lbl">Patient has…</span>
       <div class="row"><input type="text" id="f-dx" placeholder="e.g., osteomyelitis infection"></div>
-      <span class="lbl">Resulting in…</span>
+      <span class="lbl">…resulting in…</span>
       <div class="chips" data-for="f-effect">
         <button class="chip">increased weakness and exhaustion</button>
         <button class="chip">decreased endurance</button>
@@ -364,7 +364,7 @@
     <div class="step">
       <div class="step-head"><span class="step-num">2</span><span class="step-title" id="s2title">Help needed to leave home</span></div>
       <div class="ta">
-        <div class="step-q">Device, person, transport, or all of these?</div>
+        <div class="step-q"><b>To leave the home, the patient requires…</b> (device, person, transport)</div>
         <div class="chips" data-for="f-assist">
           <button class="chip">standby assist</button>
           <button class="chip">hands-on assist</button>
@@ -378,7 +378,7 @@
         <div class="row"><input type="text" id="f-assist" placeholder="e.g., standby assist, a driver"></div>
       </div>
       <div class="tb" style="display:none">
-        <div class="step-q">Why is leaving home medically contraindicated?</div>
+        <div class="step-q"><b>Leaving home is medically contraindicated because…</b></div>
         <div class="row"><input type="text" id="f-contra" placeholder="e.g., travel requires transfers that place pressure on the sacral wound"></div>
       </div>
     </div>
@@ -387,24 +387,24 @@
     <div class="step">
       <div class="step-head"><span class="step-num">3</span><span class="step-title">Risks</span></div>
       <div class="step-q">Fill only the risks that apply, with the reason.</div>
-      <span class="lbl">High fall risk due to…</span>
+      <span class="lbl">Patient is at high fall risk due to…</span>
       <div class="chips" data-for="f-fall">
         <button class="chip">frail condition</button><button class="chip">deconditioning</button><button class="chip">unsteady gait</button><button class="chip">generalized weakness</button><button class="chip">dizziness</button><button class="chip">history of falls</button>
       </div>
       <div class="row"><input type="text" id="f-fall" placeholder="e.g., frail condition and deconditioning"></div>
-      <span class="lbl">High infection risk due to…</span>
+      <span class="lbl">Patient is at high infection risk due to…</span>
       <div class="chips" data-for="f-infect">
         <button class="chip">immunocompromised status</button><button class="chip">open wound</button><button class="chip">central line</button><button class="chip">chemotherapy</button>
       </div>
       <div class="row"><input type="text" id="f-infect" placeholder="e.g., immunocompromised status after liver transplant"></div>
-      <span class="lbl">Other risk <span style="font-weight:400;color:var(--grey)">(say it as a full phrase, e.g., “high risk for respiratory distress due to COPD”)</span></span>
+      <span class="lbl">Other concern: patient… <span style="font-weight:400;color:var(--grey)">(e.g., “is unable to remember tasks without prompting”)</span></span>
       <div class="row"><input type="text" id="f-other" placeholder="optional"></div>
     </div>
 
     <!-- STEP 4 -->
     <div class="step">
       <div class="step-head"><span class="step-num">4</span><span class="step-title">Taxing effort</span></div>
-      <div class="step-q">What shows leaving home is exhausting?</div>
+      <div class="step-q"><b>Leaving home requires considerable and taxing effort, as evidenced by…</b></div>
       <div class="chips" data-for="f-taxing">
         <button class="chip">ongoing rest on and off during the day</button>
         <button class="chip">shortness of breath after walking 10–15 feet</button>
@@ -417,7 +417,7 @@
     <!-- STEP 5 -->
     <div class="step">
       <div class="step-head"><span class="step-num">5</span><span class="step-title">After an outing</span></div>
-      <div class="step-q">What happens when they return home? Start with a verb.</div>
+      <div class="step-q"><b>When returning home, patient…</b></div>
       <div class="chips" data-for="f-after" data-single="1">
         <button class="chip">needs a full day of rest</button>
         <button class="chip">needs to lie down for several hours</button>
@@ -430,7 +430,7 @@
     <!-- STEP 6 -->
     <div class="step">
       <div class="step-head"><span class="step-num">6</span><span class="step-title">Skilled need</span></div>
-      <div class="step-q">What skilled services? (say “comma” between items, or tap)</div>
+      <div class="step-q"><b>Patient requires skilled nursing for…</b> (say “comma” between items, or tap)</div>
       <div class="chips" data-for="f-skilled">
         <button class="chip">IV care</button><button class="chip">PICC line care</button><button class="chip">labs</button><button class="chip">wound care</button><button class="chip">cardiopulmonary assessment</button><button class="chip">medication teaching</button><button class="chip">disease management teaching</button><button class="chip">symptom monitoring</button>
       </div>
@@ -551,58 +551,73 @@
   function stripLead(s, re) { return s.replace(re, ''); }
   function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 
-  function buildStatement() {
-    var dx = clean(val('f-dx'), true);
-    var effect = stripLead(clean(val('f-effect')), /^(resulting in|results in|causing)\s+/i);
-    var assist = joinList(val('f-assist'));
-    var contra = stripLead(clean(val('f-contra')), /^because\s+/i);
-    var fall = stripLead(joinList(val('f-fall')), /^(due to|because of)\s+/i);
-    var infect = stripLead(joinList(val('f-infect')), /^(due to|because of)\s+/i);
-    var other = clean(val('f-other'));
-    var taxing = stripLead(clean(val('f-taxing')), /^(as evidenced by|evidenced by)\s+/i);
-    var after = clean(val('f-after'));
-    var skilled = stripLead(joinList(splitSkills(val('f-skilled'))), /^(skilled nursing for|for)\s+/i);
-    var disc = val('f-discipline') || 'nursing';
+  // "Complete this sentence" lead-ins: spoken prompt = exact words that start the sentence in the statement
+  var LEADS = [
+    { id: 'f-dx',     lead: 'Patient has' },
+    { id: 'f-effect', lead: 'Resulting in' },
+    { id: 'f-assist', lead: 'To leave the home, the patient requires', tpl: 'a' },
+    { id: 'f-contra', lead: 'Leaving home is medically contraindicated because', tpl: 'b' },
+    { id: 'f-fall',   lead: 'Patient is at high fall risk due to', optional: true },
+    { id: 'f-infect', lead: 'Patient is at high infection risk due to', optional: true },
+    { id: 'f-other',  lead: 'Other concern: patient', optional: true },
+    { id: 'f-taxing', lead: 'Leaving home requires considerable and taxing effort, as evidenced by' },
+    { id: 'f-after',  lead: 'When returning home, patient', optional: true },
+    { id: 'f-skilled', lead: 'Patient requires skilled nursing for' }
+  ];
+  function skilledLead() { return 'Patient requires skilled ' + (val('f-discipline') || 'nursing') + ' for'; }
+  var WHO = '(?:the\\s+)?(?:patient|pt|she|he|they)';
+  // Strip anything the nurse repeated from the lead-in so nothing doubles
+  var DEDUP = {
+    'f-dx':     [new RegExp('^' + WHO + '\\s+(?:has|have)\\s+', 'i')],
+    'f-effect': [/^(?:which\s+is\s+)?(?:resulting|results|resulted|causing|causes)\s+in\s+/i, /^(?:resulting|causing)\s+/i],
+    'f-assist': [/^to\s+leave\s+(?:the\s+)?home,?\s*/i, new RegExp('^' + WHO + '\\s+'), /^(?:requires|require|needs|need)\s+/i, /\s+to\s+leave\s+(?:the\s+)?home$/i],
+    'f-contra': [/^leaving\s+home\s+is\s+(?:medically\s+)?contraindicated\s*/i, /^because\s+(?:of\s+)?/i],
+    'f-fall':   [new RegExp('^' + WHO + '\\s+(?:is\\s+)?', 'i'), /^(?:at\s+)?(?:a\s+)?(?:high\s+)?(?:fall\s+risks?|risks?\s+for\s+falls?|risk\s+of\s+falls?)\s*(?:is\s+)?/i, /^(?:due\s+to|because\s+of|from|r\/t|related\s+to)\s+/i],
+    'f-infect': [new RegExp('^' + WHO + '\\s+(?:is\\s+)?', 'i'), /^(?:also\s+)?(?:at\s+)?(?:a\s+)?(?:high\s+)?(?:infection\s+risks?|risks?\s+for\s+infection|risk\s+of\s+infection)\s*(?:is\s+)?/i, /^(?:due\s+to|because\s+of|from|r\/t|related\s+to)\s+/i],
+    'f-other':  [/^other\s+concerns?:?\s*/i, new RegExp('^' + WHO + '\\s+', 'i'), /^also\s+/i],
+    'f-taxing': [/^leaving\s+home\s+requires\s*/i, /^considerable\s+and\s+taxing\s+effort,?\s*/i, /^(?:as\s+)?evidenced?\s+by\s+/i],
+    'f-after':  [/^(?:when|after)\s+(?:returning|they\s+return|she\s+returns|he\s+returns|getting|coming)\s+home,?\s*/i, new RegExp('^' + WHO + '\\s+', 'i'), /,?\s+(?:when|after)\s+returning\s+home$/i],
+    'f-skilled':[new RegExp('^' + WHO + '\\s+', 'i'), /^(?:requires|needs)\s+/i, /^skilled\s+(?:nursing|therapy|nursing\s+and\s+therapy)\s*/i, /^for\s+/i]
+  };
+  function dedup(id, s) {
+    (DEDUP[id] || []).forEach(function(re){ s = s.replace(re, ''); });
+    return s.trim();
+  }
+  function field(id, list) {
+    var raw = val(id);
+    if (id === 'f-skilled') raw = splitSkills(dedup(id, fixVocab(clean(raw, true))));
+    var s = list ? joinList(raw) : clean(raw);
+    s = dedup(id, s);
+    if (!list) s = clean(s);
+    return s;
+  }
 
+  function buildStatement() {
+    var dx = cap(field('f-dx')), effect = field('f-effect'), assist = field('f-assist', true), contra = field('f-contra');
+    var fall = field('f-fall', true), infect = field('f-infect', true), other = field('f-other');
+    var taxing = field('f-taxing'), after = field('f-after'), skilled = field('f-skilled', true);
+    taxing = taxing.replace(/,\s+(she|he|they)\s+(?=[a-z])/gi, function(m, w){ return '. ' + w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() + ' '; });
+    var disc = val('f-discipline') || 'nursing';
     if (!(dx||effect||assist||contra||fall||infect||other||taxing||after||skilled)) return '';
 
-    var S = subj(), out = [];
-    var BE = pron === 'they' ? 'are' : 'is';
-    if (dx) dx = cap(dx);
-    effect = effect.replace(/\.\s*$/, '');
+    var S = subj(), BE = pron === 'they' ? 'are' : 'is', HAS = pron === 'they' ? 'have' : 'has', REQ = pron === 'they' ? 'require' : 'requires';
+    var out = [];
     out.push('Patient has ' + (dx || '[CONDITION]') + (effect ? ' resulting in ' + effect : ''));
-    if (currentTemplate === 'a') {
-      out.push('Because of this condition, the patient requires ' + (assist || '[ASSISTANCE/DEVICE/TRANSPORT]') + ' to leave the home');
-    } else {
-      out.push('Leaving home is medically contraindicated because ' + (contra || '[MEDICAL RISK]'));
-    }
-    var firstRisk = true;
-    if (fall) { out.push('The patient is at high fall risk due to ' + fall); firstRisk = false; }
-    if (infect) {
-      out.push(firstRisk ? 'The patient is at high infection risk due to ' + infect
-                         : S + ' ' + BE + ' also at high infection risk due to ' + infect);
-      firstRisk = false;
-    }
+    if (currentTemplate === 'a') out.push('To leave the home, the patient requires ' + (assist || '[ASSISTANCE/DEVICE/TRANSPORT]'));
+    else out.push('Leaving home is medically contraindicated because ' + (contra || '[MEDICAL RISK]'));
+    if (fall) out.push('Patient is at high fall risk due to ' + fall);
+    if (infect) out.push(fall ? S + ' ' + BE + ' also at high infection risk due to ' + infect : 'Patient is at high infection risk due to ' + infect);
     if (other) {
-      var also = firstRisk ? '' : ' also';
-      var o = other.replace(/^(the patient|patient|she|he|they)\s+/i, '').replace(/^also\s+/i, '');
-      if (/\brisk\b/i.test(o)) {                       // "high risk for X due to Y"
-        o = o.replace(/^(is|are)\s+(also\s+)?/i, '').replace(/^at\s+/i, '');
-        out.push(S + ' ' + BE + also + ' at ' + o);
-      } else if (VERB_START.test(o)) {                 // "requires prompting...", "has confusion..."
-        out.push(S + also + ' ' + conj(o));
-      } else {                                         // noun phrase: "confusion at certain times..."
-        out.push(S + ' also ' + (pron === 'they' ? 'have ' : 'has ') + o);
-      }
+      if (/^(?:at\s+)?(?:a\s+)?high\s+risk\b/i.test(other) || /^risk\b/i.test(other)) out.push(S + ' ' + BE + ' also at ' + other.replace(/^at\s+/i, ''));
+      else if (VERB_START.test(other)) out.push(S + ' ' + conj(other));
+      else out.push(S + ' ' + HAS + ' ' + other);
     }
-    out.push('The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING EFFORT]'));
+    out.push('Patient is unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING EFFORT]'));
     if (after) {
-      var a = after.replace(/^(the patient|patient|she|he|they)\s+/i, '');
-      var hasReturn = /\b(return|returning|gets? home|got home|after)\b/i.test(a);
-      if (VERB_START.test(a)) out.push(S + ' ' + conj(a) + (hasReturn ? '' : ' when returning home'));
-      else out.push(S + ' ' + (pron === 'they' ? 'require ' : 'requires ') + a + (hasReturn ? '' : ' when returning home'));
+      var who = pron === 'patient' ? 'the patient' : S.toLowerCase();
+      out.push('When returning home, ' + who + ' ' + (VERB_START.test(after) ? conj(after) : REQ + ' ' + after));
     }
-    out.push('The patient requires skilled ' + disc + ' for ' + (skilled || '[SKILLED NEED]'));
+    out.push('Patient requires skilled ' + disc + ' for ' + (skilled || '[SKILLED NEED]'));
     out = out.map(function(x){ x = sentenceFix(x.trim().replace(/[\s,;.]+$/, '')); return x.charAt(0).toUpperCase() + x.slice(1) + '.'; });
     return out.join(' ').replace(/\.\./g, '.').replace(/\s{2,}/g, ' ');
   }
@@ -662,17 +677,11 @@
   if (!SR) document.getElementById('noSpeech').style.display = 'block';
 
   function buildFieldList() {
-    var f = [{ id: 'pron', label: 'Pronoun — she, he, they, or patient', isPron: true },
-             { id: 'f-dx', label: 'Main diagnosis' },
-             { id: 'f-effect', label: 'Resulting in what?' }];
-    if (currentTemplate === 'a') f.push({ id: 'f-assist', label: 'What help does the patient need to leave home? Device, person, or driver.' });
-    else f.push({ id: 'f-contra', label: 'Why is leaving home medically contraindicated?' });
-    f.push({ id: 'f-fall', label: 'Fall risk due to what? Or say none.', optional: true });
-    f.push({ id: 'f-infect', label: 'Infection risk due to what? Or say none.', optional: true });
-    f.push({ id: 'f-other', label: 'Any other safety concern? Or say none.', optional: true });
-    f.push({ id: 'f-taxing', label: 'What shows leaving home is taxing?' });
-    f.push({ id: 'f-after', label: 'What happens when the patient gets home? Or say none.', optional: true });
-    f.push({ id: 'f-skilled', label: 'Skilled need. Say comma between items.' });
+    var f = [{ id: 'pron', label: 'Pronoun: she, he, they, or patient?', isPron: true }];
+    LEADS.forEach(function(L){
+      if (L.tpl && L.tpl !== currentTemplate) return;
+      f.push({ id: L.id, label: L.id === 'f-skilled' ? skilledLead() + '…' : L.lead + '…', optional: !!L.optional });
+    });
     fields = f;
   }
   function hasCmd(text, words) {
@@ -710,7 +719,7 @@
     setupRecognition();
     // Start mic NOW from this tap so iPad Safari allows listening after the prompts.
     try { recognition.start(); recognizing = true; } catch (e) {}
-    speak('Homebound statement. Answer, then pause. I will go on by myself.', function() { nextField(); });
+    speak('Homebound statement. Finish each sentence, then pause. I will go on by myself.', function() { nextField(); });
   }
 
   function setupRecognition() {
