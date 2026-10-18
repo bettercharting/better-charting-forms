@@ -293,7 +293,7 @@
 <div class="container">
   <div class="header">
     <h1>Homebound Statement Builder — Voice</h1>
-    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting <span id="ver" style="background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px;margin-left:4px;">v5 • Oct 17</span></div>
+    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting <span id="ver" style="background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px;margin-left:4px;">v6 • Oct 17</span></div>
   </div>
   <div class="body">
 
@@ -317,7 +317,7 @@
 
     <div class="voice-wrap">
       <div id="noSpeech" class="no-speech">This browser can't do hands-free voice. Use Safari on iPad/iPhone (opened from your bookmark, not Files) or Chrome. You can still tap and type below, or use the 🎤 on your keyboard.</div>
-      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads the start of each sentence aloud — finish the sentence, then pause about 3 seconds and it goes on by itself. (Check the header says <b>v5</b>; if not, refresh the page.) Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
+      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads the start of each sentence aloud — finish the sentence, then pause about 2 seconds and it goes on by itself. (Check the header says <b>v6</b>; if not, refresh the page.) Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
       <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()">▶ Start Voice</button>
       <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
       <div class="voice-status" id="voiceStatus">
@@ -686,7 +686,7 @@
   // ---------- Hands-free voice (same flow as SOC Journal Voice) ----------
   var fields = [], fieldIdx = 0, voiceActive = false, recognizing = false, speaking = false, advancing = false;
   var lastInterim = '', accumulated = '', gotSpeech = false, listenStartedAt = 0, pendingCommit = null;
-  var PAUSE_MS = 3500;
+  var PAUSE_MS = 2000;
   var synth = window.speechSynthesis;
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var recognition = null, useLocal = true;
@@ -697,7 +697,7 @@
     var f = [{ id: 'pron', label: 'Pronoun: she, he, they, or patient?', isPron: true }];
     LEADS.forEach(function(L){
       if (L.tpl && L.tpl !== currentTemplate) return;
-      f.push({ id: L.id, label: L.id === 'f-skilled' ? skilledLead() + '…' : L.lead + '…', optional: !!L.optional });
+      f.push({ id: L.id, label: (L.id === 'f-dx' ? 'Main condition and how it affects them. Finish this sentence: ' : '') + (L.id === 'f-skilled' ? skilledLead() : L.lead) + '…', optional: !!L.optional });
     });
     fields = f;
   }
