@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homebound Statement Voice Builder — @bettercharting</title>
+<style>
+  :root {
+    --blue: #123b62;
+    --blue-light: #eef7ff;
+    --blue-border: #2f80c0;
+    --grey: #526070;
+    --green-bg: #eaf7ef;
+    --green-border: #acd8bb;
+    --orange-bg: #fff8ed;
+    --orange-border: #f1d1a6;
+    --orange-left: #d9822b;
+    --green-left: #2f8f4e;
+    --bg: #f0f4f8;
+    --white: #fff;
+    --border: #d8e2ec;
+    --row-alt: #f7fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: #172033;
+    line-height: 1.5;
+    padding: 20px;
+    -webkit-text-size-adjust: 100%;
+  }
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(15,23,42,.12);
+    overflow: hidden;
+  }
+  .header {
+    background: var(--blue);
+    color: var(--white);
+    padding: 20px 28px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .body { padding: 24px 28px 32px; }
+
+  .reminder {
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-left: 4px solid var(--orange-left);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #7a5c2a;
+    margin-bottom: 20px;
+  }
+  .reminder b { color: var(--orange-left); }
+
+  .template-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .template-btn {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey);
+    transition: all .15s;
+    text-align: left;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .template-btn:hover { border-color: var(--blue-border); }
+  .template-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-light);
+    color: var(--blue);
+  }
+  .template-btn .t-label { font-size: 15px; font-weight: 700; display: block; margin-bottom: 4px; }
+  .template-btn .t-desc { font-size: 11px; font-weight: 400; color: var(--grey); }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 5px;
+  }
+  .field-group label .hint {
+    font-weight: 400;
+    color: var(--grey);
+    font-size: 11px;
+  }
+  .field-group input,
+  .field-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #172033;
+    background: var(--white);
+    transition: border-color .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field-group input:focus,
+  .field-group select:focus {
+    outline: none;
+    border-color: var(--blue-border);
+    box-shadow: 0 0 0 3px rgba(47,128,192,.12);
+  }
+  .field-group .hint-below {
+    font-size: 11px;
+    color: var(--grey);
+    margin-top: 4px;
+  }
+
+  .output-section { margin-top: 24px; }
+  .output-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .output-box {
+    width: 100%;
+    min-height: 140px;
+    padding: 16px 20px;
+    border: 2px solid var(--blue-border);
+    border-radius: 8px;
+    font-size: 16px;
+    line-height: 1.65;
+    font-family: inherit;
+    color: #172033;
+    background: #f4f8fc;
+    resize: vertical;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .output-box::placeholder { color: #aaa; font-style: italic; }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .copy-btn:hover { background: #0d2d4d; }
+  .copy-btn:active { transform: scale(.97); }
+  .copy-btn.copied { background: #2f8f4e; }
+  .copy-btn .icon { font-size: 16px; }
+  .select-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--white);
+    color: var(--blue);
+    border: 2px solid var(--blue-border);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .select-btn:hover { background: var(--blue-light); }
+
+  .checklist {
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-left: 4px solid var(--orange-left);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .checklist h3 {
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .checklist label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .checklist input[type="checkbox"] {
+    margin-top: 2px;
+    accent-color: var(--orange-left);
+    width: 18px;
+    height: 18px;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #a0b0c0;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+
+  #template-b-fields { display: none; }
+  .template-b-only { display: none; }
+  .template-a-only { display: block; }
+
+  @media (max-width: 600px) {
+    .template-selector { flex-direction: column; }
+    body { padding: 10px; }
+    .body { padding: 16px 18px 24px; }
+    .btn-row { flex-direction: column; }
+    .copy-btn, .select-btn { width: 100%; justify-content: center; }
+  }
+
+  .step { border:1.5px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:16px; background:var(--white); }
+  .step-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .step-num { background:var(--blue); color:#fff; border-radius:50%; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex:none; }
+  .step-title { font-size:16px; font-weight:700; color:var(--blue); }
+  .step-q { font-size:13px; color:var(--grey); margin-bottom:10px; }
+  .row { display:flex; gap:8px; align-items:stretch; margin-bottom:8px; }
+  .row input { flex:1; min-height:48px; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:17px; font-family:inherit; -webkit-appearance:none; appearance:none; }
+  .row input:focus { outline:none; border-color:var(--blue-border); box-shadow:0 0 0 3px rgba(47,128,192,.12); }
+  .row .lbl { font-size:12px; font-weight:600; color:var(--blue); display:block; margin:6px 0 4px; }
+  .mic { min-width:52px; min-height:48px; border:2px solid var(--blue-border); background:var(--blue-light); border-radius:8px; font-size:22px; cursor:pointer; -webkit-appearance:none; appearance:none; }
+  .mic.listening { background:#fde8e8; border-color:#c0392b; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.55; } }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+  .chip { min-height:40px; padding:8px 14px; border:1.5px solid var(--border); border-radius:20px; background:var(--row-alt); font-size:14px; color:var(--blue); cursor:pointer; -webkit-appearance:none; appearance:none; }
+  .chip:active, .chip.on { background:var(--blue-light); border-color:var(--blue-border); }
+  .pron { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+  .pron b { font-size:13px; color:var(--blue); margin-right:4px; }
+  .pron .chip.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .voice-note { background:var(--blue-light); border:1px solid var(--blue-border); border-left:4px solid var(--blue-border); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--blue); margin-bottom:20px; }
+  .voice-note.warn { background:var(--orange-bg); border-color:var(--orange-border); border-left-color:var(--orange-left); color:#7a5c2a; }
+  .output-box { min-height:200px; }
+  .template-btn { min-height:60px; }
+  .copy-btn, .select-btn { min-height:50px; }
+
+  .voice-status { display:none; } .voice-status.show { display:block; }
+  .vs-current { font-size:20px; font-weight:700; color:var(--blue); margin-bottom:8px; line-height:1.3; }
+  .vs-heard { background:var(--green-bg); border:1px solid var(--green-border); border-radius:10px; padding:12px 14px; font-size:15px; color:#1a4d2a; margin-bottom:12px; min-height:44px; line-height:1.4; }
+  .vs-heard .label { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--green-left); display:block; margin-bottom:4px; }
+  .vs-listening { font-size:14px; color:var(--green-left); font-weight:700; display:none; }
+  .vs-listening.show { display:block; animation:pulse 1.2s infinite; }
+  .progress-bar { height:6px; background:var(--blue-light); border-radius:3px; margin-bottom:16px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--blue); border-radius:3px; transition:width .3s; }
+  .big-btn { width:100%; padding:20px; border:none; border-radius:12px; font-size:18px; font-weight:700; cursor:pointer; color:#fff; background:var(--blue); margin-bottom:10px; -webkit-appearance:none; appearance:none; }
+  .big-btn.green { background:var(--green-left); } .big-btn.red { background:#c0392b; }
+  .big-btn:active { transform:scale(.98); }
+  .drive-row { display:flex; gap:10px; margin:12px 0; } .drive-row .big-btn { margin-bottom:0; }
+  #answerBox { width:100%; min-height:90px; padding:12px; border:2px solid var(--blue-border); border-radius:10px; font-size:18px; line-height:1.4; margin:10px 0; font-family:inherit; }
+  .mic-warn, .no-speech { display:none; background:#fff3cd; border:1px solid #e0b000; border-radius:8px; padding:10px 12px; font-size:13px; color:#7a5c00; margin-bottom:10px; }
+  .field-log { margin-top:12px; max-height:180px; overflow-y:auto; }
+  .field-log .fl-item { font-size:12px; padding:6px 10px; border-bottom:1px solid var(--border); color:var(--grey); }
+  .field-log .fl-item .fl-label { font-weight:700; color:var(--blue); }
+  .voice-wrap { border:2px solid var(--green-border); background:var(--green-bg); border-radius:12px; padding:14px; margin-bottom:20px; }
+  .voice-wrap .cue { font-size:13px; color:#1a4d2a; margin-bottom:10px; line-height:1.5; }
+  .manual-head { font-size:13px; font-weight:700; color:var(--blue); margin:4px 0 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Homebound Statement Builder — Voice</h1>
+    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting</div>
+  </div>
+  <div class="body">
+
+    <div class="reminder">
+      <b>Safety:</b> Use only findings that were assessed, observed, reported, and documented for this patient. Delete any part that does not apply. Nothing is saved or sent anywhere: closing or clearing this page erases it. Dictate while parked, not while driving.
+    </div>
+
+    
+
+    <div class="template-selector">
+      <button class="template-btn active" id="btn-a" onclick="selectTemplate('a')">
+        <span class="t-label">Template A</span>
+        <span class="t-desc">Patient needs help/equipment/transport to leave home (most patients)</span>
+      </button>
+      <button class="template-btn" id="btn-b" onclick="selectTemplate('b')">
+        <span class="t-label">Template B</span>
+        <span class="t-desc">Leaving home is medically contraindicated (specific medical risk)</span>
+      </button>
+    </div>
+
+
+    <div class="voice-wrap">
+      <div id="noSpeech" class="no-speech">This browser can't do hands-free voice. Use Safari on iPad/iPhone (opened from your bookmark, not Files) or Chrome. You can still tap and type below, or use the 🎤 on your keyboard.</div>
+      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads each prompt aloud — answer, then pause about 3 seconds and it goes on by itself. Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
+      <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()">▶ Start Voice</button>
+      <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
+      <div class="voice-status" id="voiceStatus">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="vs-current" id="vsCurrent">Starting…</div>
+        <div id="micWarn" class="mic-warn">I am not hearing you. Use Safari (not Chrome, not Files). Tap Allow for Microphone. Keep this tab open and Auto-Lock off.</div>
+        <textarea id="answerBox" placeholder="Your answer for this prompt goes here. If this stays empty, it is not hearing you."></textarea>
+        <div class="vs-heard" id="vsHeard" style="display:none;"><span class="label">Heard:</span><span id="vsHeardText"></span></div>
+        <div class="vs-listening" id="vsListening">🎤 Listening… answer, then pause</div>
+        <div class="drive-row">
+          <button type="button" class="big-btn green" onclick="tapNext()">Next</button>
+          <button type="button" class="big-btn" onclick="tapSkip()">Skip</button>
+        </div>
+        <div class="field-log" id="fieldLog"></div>
+      </div>
+    </div>
+    <div class="manual-head">Prompts (fill in by voice above, or tap/type here):</div>
+    <div class="pron"><b>Pronoun:</b>
+      <button class="chip on" data-p="she" onclick="setPron(this)">She</button>
+      <button class="chip" data-p="he" onclick="setPron(this)">He</button>
+      <button class="chip" data-p="they" onclick="setPron(this)">They</button>
+      <button class="chip" data-p="patient" onclick="setPron(this)">The patient</button>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">1</span><span class="step-title">Diagnosis &amp; effect</span></div>
+      <div class="step-q">Main condition? How does it affect them?</div>
+      <span class="lbl">Condition</span>
+      <div class="row"><input type="text" id="f-dx" placeholder="e.g., osteomyelitis infection"></div>
+      <span class="lbl">Resulting in…</span>
+      <div class="chips" data-for="f-effect">
+        <button class="chip">increased weakness and exhaustion</button>
+        <button class="chip">decreased endurance</button>
+        <button class="chip">shortness of breath with minimal exertion</button>
+        <button class="chip">unsteady gait</button>
+        <button class="chip">confusion and poor safety awareness</button>
+        <button class="chip">pain with mobility</button>
+      </div>
+      <div class="row"><input type="text" id="f-effect" placeholder="e.g., increased weakness and exhaustion due to extended hospitalization"></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">2</span><span class="step-title" id="s2title">Help needed to leave home</span></div>
+      <div class="ta">
+        <div class="step-q">Device, person, transport, or all of these?</div>
+        <div class="chips" data-for="f-assist">
+          <button class="chip">standby assist</button>
+          <button class="chip">hands-on assist</button>
+          <button class="chip">a walker</button>
+          <button class="chip">a wheelchair</button>
+          <button class="chip">a cane</button>
+          <button class="chip">a driver</button>
+          <button class="chip">supplemental oxygen</button>
+          <button class="chip">medical transport</button>
+        </div>
+        <div class="row"><input type="text" id="f-assist" placeholder="e.g., standby assist, a driver"></div>
+      </div>
+      <div class="tb" style="display:none">
+        <div class="step-q">Why is leaving home medically contraindicated?</div>
+        <div class="row"><input type="text" id="f-contra" placeholder="e.g., travel requires transfers that place pressure on the sacral wound"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">3</span><span class="step-title">Risks</span></div>
+      <div class="step-q">Fill only the risks that apply, with the reason.</div>
+      <span class="lbl">High fall risk due to…</span>
+      <div class="chips" data-for="f-fall">
+        <button class="chip">frail condition</button><button class="chip">deconditioning</button><button class="chip">unsteady gait</button><button class="chip">generalized weakness</button><button class="chip">dizziness</button><button class="chip">history of falls</button>
+      </div>
+      <div class="row"><input type="text" id="f-fall" placeholder="e.g., frail condition and deconditioning"></div>
+      <span class="lbl">High infection risk due to…</span>
+      <div class="chips" data-for="f-infect">
+        <button class="chip">immunocompromised status</button><button class="chip">open wound</button><button class="chip">central line</button><button class="chip">chemotherapy</button>
+      </div>
+      <div class="row"><input type="text" id="f-infect" placeholder="e.g., immunocompromised status after liver transplant"></div>
+      <span class="lbl">Other risk <span style="font-weight:400;color:var(--grey)">(say it as a full phrase, e.g., “high risk for respiratory distress due to COPD”)</span></span>
+      <div class="row"><input type="text" id="f-other" placeholder="optional"></div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">4</span><span class="step-title">Taxing effort</span></div>
+      <div class="step-q">What shows leaving home is exhausting?</div>
+      <div class="chips" data-for="f-taxing">
+        <button class="chip">ongoing rest on and off during the day</button>
+        <button class="chip">shortness of breath after walking 10–15 feet</button>
+        <button class="chip">seated rest breaks with short distances</button>
+        <button class="chip">fatigue with basic ADLs</button>
+      </div>
+      <div class="row"><input type="text" id="f-taxing" placeholder="e.g., patient requires ongoing rest on and off during the day"></div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">5</span><span class="step-title">After an outing</span></div>
+      <div class="step-q">What happens when they return home? Start with a verb.</div>
+      <div class="chips" data-for="f-after" data-single="1">
+        <button class="chip">needs a full day of rest</button>
+        <button class="chip">needs to lie down for several hours</button>
+        <button class="chip">has increased pain the rest of the day</button>
+        <button class="chip">is unable to complete ADLs the rest of the day</button>
+      </div>
+      <div class="row"><input type="text" id="f-after" placeholder="e.g., needs a full day of rest"></div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">6</span><span class="step-title">Skilled need</span></div>
+      <div class="step-q">What skilled services? (say “comma” between items, or tap)</div>
+      <div class="chips" data-for="f-skilled">
+        <button class="chip">IV care</button><button class="chip">PICC line care</button><button class="chip">labs</button><button class="chip">wound care</button><button class="chip">cardiopulmonary assessment</button><button class="chip">medication teaching</button><button class="chip">disease management teaching</button><button class="chip">symptom monitoring</button>
+      </div>
+      <div class="row"><input type="text" id="f-skilled" placeholder="e.g., IV care, PICC line care, labs"></div>
+      <div class="hint-below">Discipline: <select id="f-discipline" onchange="updateOutput()" style="font-size:16px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;">
+        <option value="nursing">nursing</option>
+        <option value="therapy">therapy</option>
+        <option value="nursing and therapy">nursing and therapy</option>
+      </select></div>
+    </div>
+
+    <div class="output-section">
+      <label class="output-label" for="output">Your Homebound Statement <span style="font-weight:400;color:var(--grey);font-size:12px">(updates live — you can edit it here before copying)</span></label>
+      <textarea class="output-box" id="output" placeholder="Answer the prompts above to build your statement..."></textarea>
+      <div class="btn-row">
+        <button class="copy-btn" id="copyBtn" onclick="copyOutput()"><span class="icon">📋</span><span id="copyText">Copy Statement</span></button>
+        <button class="select-btn" onclick="selectOutput()"><span>📑 Select All Text</span></button>
+        <button class="select-btn" onclick="clearAll()"><span>🧹 Clear / Next Patient</span></button>
+      </div>
+    </div>
+
+    <div class="reminder" style="margin-top:16px;margin-bottom:0">
+      <b>Before pasting:</b> add at least one visit-specific detail (today's vitals, distance walked, symptoms observed today) and verify every statement against your own assessment. Avoid pasting the same wording visit after visit.
+    </div>
+
+    <div class="checklist">
+      <h3>Before You Sign — 5-Point Check</h3>
+      <label><input type="checkbox"> Names the <b>condition/illness/injury</b></label><br>
+      <label><input type="checkbox"> Describes the <b>functional limitation</b></label><br>
+      <label><input type="checkbox"> Clearly uses <b>Template A or B</b></label><br>
+      <label><input type="checkbox"> Shows patient is <b>normally unable to leave home</b> and leaving requires <b>considerable/taxing effort</b></label><br>
+      <label><input type="checkbox"> Includes <b>patient-specific evidence</b> and <b>skilled nursing/therapy need</b></label>
+    </div>
+
+    <div class="footer">
+      © 2026 Katie Escobar, RN. All rights reserved. Single-user license only. @bettercharting
+    </div>
+  </div>
+</div>
+
+<script>
+  var currentTemplate = 'a';
+  var pron = 'she';
+  var edited = false; // true once nurse types in the final box
+
+  var ACRO = ['IV','PICC','COPD','CHF','CVA','UTI','DVT','PE','ESRD','CKD','HTN','ADLs','ADL','O2','PT','INR','PT/INR','OT','SN','MS','ALS','TIA','MI','CAD','PVD','AFib','BKA','AKA','TKA','THA','RN','PRN','HHA','G-tube','PEG','CBC','BMP'];
+  var ACRO_MAP = {};
+  ACRO.forEach(function(a){ ACRO_MAP[a.toLowerCase()] = a; });
+  ACRO_MAP['adls']='ADLs'; ACRO_MAP['o2']='O2'; ACRO_MAP['afib']='AFib';
+
+  function fixAcronyms(s) {
+    return s.replace(/[A-Za-z][A-Za-z0-9\/\-]*/g, function(w){ return ACRO_MAP[w.toLowerCase()] || w; });
+  }
+  // Clean one dictated fragment: trim, collapse spaces, drop end punctuation, fix acronyms, lowercase first letter (mid-sentence)
+  function clean(s, keepCase) {
+    s = (s || '').replace(/\s+/g, ' ').trim();
+    s = s.replace(/^[,;.\s]+|[,;.!?\s]+$/g, '');
+    s = s.replace(/\s+([,;])/g, '$1').replace(/([,;])(?=\S)/g, '$1 ');
+    s = s.replace(/\.{2,}/g, '.');
+    s = fixAcronyms(s);
+    if (!keepCase && s && !/^[A-Z0-9]{2,}/.test(s.split(' ')[0])) s = s.charAt(0).toLowerCase() + s.slice(1);
+    return s;
+  }
+  // Join list: "a, b, c" or "a; b and c" -> "a, b, and c"
+  function joinList(s) {
+    s = clean(s);
+    if (!s) return '';
+    var parts = s.split(/\s*[,;]\s*/).filter(Boolean);
+    if (parts.length > 1) {
+      var last = parts[parts.length-1].replace(/^and\s+/i, '');
+      parts[parts.length-1] = last;
+    }
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return parts[0] + ' and ' + parts[1];
+    return parts.slice(0,-1).join(', ') + ', and ' + parts[parts.length-1];
+  }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function subj() { return {she:'She', he:'He', they:'They', patient:'The patient'}[pron]; }
+  function conj(phrase) { // agree first verb with "they"
+    if (pron !== 'they' || !phrase) return phrase;
+    var irregular = {is:'are', has:'have', does:'do', was:'were', needs:'need', requires:'require'};
+    var m = phrase.match(/^(\S+)(.*)$/);
+    var w = m[1], rest = m[2];
+    if (irregular[w]) return irregular[w] + rest;
+    if (/[^s]s$/.test(w) && w.length > 3) return w.replace(/es$/, function(){ return /(sh|ch|x|ss)es$/.test(w) ? '' : 'e'; }).replace(/s$/, '') + rest;
+    return phrase;
+  }
+  function stripLead(s, re) { return s.replace(re, ''); }
+  function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+
+  function buildStatement() {
+    var dx = clean(val('f-dx'), true);
+    var effect = stripLead(clean(val('f-effect')), /^(resulting in|results in|causing)\s+/i);
+    var assist = joinList(val('f-assist'));
+    var contra = stripLead(clean(val('f-contra')), /^because\s+/i);
+    var fall = stripLead(joinList(val('f-fall')), /^(due to|because of)\s+/i);
+    var infect = stripLead(joinList(val('f-infect')), /^(due to|because of)\s+/i);
+    var other = clean(val('f-other'));
+    var taxing = stripLead(clean(val('f-taxing')), /^(as evidenced by|evidenced by)\s+/i);
+    var after = clean(val('f-after'));
+    var skilled = stripLead(joinList(val('f-skilled')), /^(skilled nursing for|for)\s+/i);
+    var disc = val('f-discipline') || 'nursing';
+
+    if (!(dx||effect||assist||contra||fall||infect||other||taxing||after||skilled)) return '';
+
+    var S = subj(), out = [];
+    if (dx) dx = cap(dx);
+    out.push('Patient has ' + (dx || '[CONDITION]') + (effect ? ' resulting in ' + effect : '') + '.');
+    if (currentTemplate === 'a') {
+      out.push('Because of this condition, the patient requires ' + (assist || '[ASSISTANCE/DEVICE/TRANSPORT]') + ' to leave the home.');
+    } else {
+      out.push('Leaving home is medically contraindicated because ' + (contra || '[MEDICAL RISK]') + '.');
+    }
+    var firstRisk = true;
+    if (fall) { out.push('The patient is at high fall risk due to ' + fall + '.'); firstRisk = false; }
+    if (infect) {
+      out.push(firstRisk ? 'The patient is at high infection risk due to ' + infect + '.'
+                         : S + ' ' + (pron==='they'?'are':'is') + ' also at high infection risk due to ' + infect + '.');
+      firstRisk = false;
+    }
+    if (other) {
+      other = other.replace(/^(is|are)\s+(also\s+)?(at\s+)?/i, '');
+      if (!/^(at|in)\s/i.test(other)) other = 'at ' + other;
+      out.push(S + ' ' + (pron==='they'?'are':'is') + (firstRisk ? ' ' : ' also ') + other + '.');
+    }
+    out.push('The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING EFFORT]') + '.');
+    if (after) {
+      after = after.replace(/\s+(when|after)\s+(returning|they return|she returns|he returns)\s+home$/i, '');
+      out.push(S + ' ' + conj(after) + ' when returning home.');
+    }
+    out.push('The patient requires skilled ' + disc + ' for ' + (skilled || '[SKILLED NEED]') + '.');
+    return out.join(' ').replace(/\.\./g, '.').replace(/\s{2,}/g, ' ');
+  }
+
+  function updateOutput() {
+    var o = document.getElementById('output');
+    if (edited && o.value && !confirmOverwrite()) return;
+    o.value = buildStatement();
+    edited = false;
+  }
+  var warned = false;
+  function confirmOverwrite() {
+    if (warned) return true; warned = true;
+    return window.confirm ? confirm('You edited the statement box. Rebuild it from the prompts (your edits will be replaced)?') : true;
+  }
+
+  function selectTemplate(t) {
+    currentTemplate = t;
+    document.getElementById('btn-a').classList.toggle('active', t === 'a');
+    document.getElementById('btn-b').classList.toggle('active', t === 'b');
+    document.querySelector('.ta').style.display = t === 'a' ? 'block' : 'none';
+    document.querySelector('.tb').style.display = t === 'b' ? 'block' : 'none';
+    document.getElementById('s2title').textContent = t === 'a' ? 'Help needed to leave home' : 'Why leaving is contraindicated';
+    updateOutput();
+  }
+  function setPron(btn) {
+    pron = btn.getAttribute('data-p');
+    document.querySelectorAll('.pron .chip').forEach(function(b){ b.classList.toggle('on', b === btn); });
+    updateOutput();
+  }
+
+  // Chips append to their field
+  document.querySelectorAll('.chips').forEach(function(group) {
+    var input = document.getElementById(group.getAttribute('data-for'));
+    var single = group.getAttribute('data-single');
+    group.querySelectorAll('.chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        var add = chip.textContent.trim();
+        var cur = input.value.trim().replace(/[,;\s]+$/, '');
+        if (single || !cur) input.value = add;
+        else if (cur.toLowerCase().indexOf(add.toLowerCase()) === -1) input.value = cur + ', ' + add;
+        updateOutput();
+      });
+    });
+  });
+  document.querySelectorAll('.row input').forEach(function(i){ i.addEventListener('input', updateOutput); });
+  document.getElementById('output').addEventListener('input', function(){ edited = true; warned = false; });
+
+  // ---------- Hands-free voice (same flow as SOC Journal Voice) ----------
+  var fields = [], fieldIdx = 0, voiceActive = false, recognizing = false, speaking = false, advancing = false;
+  var accumulated = '', gotSpeech = false, listenStartedAt = 0, pendingCommit = null;
+  var PAUSE_MS = 3000;
+  var synth = window.speechSynthesis;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = null, useLocal = true;
+  var BLANK_WORDS = ['none', 'no', 'nope', 'nothing', 'n/a', 'na', 'not applicable', 'does not apply', 'no risk', 'skip'];
+  if (!SR) document.getElementById('noSpeech').style.display = 'block';
+
+  function buildFieldList() {
+    var f = [{ id: 'pron', label: 'Pronoun — she, he, they, or patient', isPron: true },
+             { id: 'f-dx', label: 'Main diagnosis' },
+             { id: 'f-effect', label: 'Resulting in what?' }];
+    if (currentTemplate === 'a') f.push({ id: 'f-assist', label: 'What help does the patient need to leave home? Device, person, or driver.' });
+    else f.push({ id: 'f-contra', label: 'Why is leaving home medically contraindicated?' });
+    f.push({ id: 'f-fall', label: 'Fall risk due to what? Or say none.', optional: true });
+    f.push({ id: 'f-infect', label: 'Infection risk due to what? Or say none.', optional: true });
+    f.push({ id: 'f-other', label: 'Any other risk? Or say none.', optional: true });
+    f.push({ id: 'f-taxing', label: 'What shows leaving home is taxing?' });
+    f.push({ id: 'f-after', label: 'What happens when the patient gets home? Or say none.', optional: true });
+    f.push({ id: 'f-skilled', label: 'Skilled need. Say comma between items.' });
+    fields = f;
+  }
+  function hasCmd(text, words) {
+    var t = (text || '').toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (t === w || t.endsWith(' ' + w) || t.indexOf(' ' + w + ' ') >= 0) return true;
+    }
+    return false;
+  }
+  function stripCmd(text) {
+    return (text || '').replace(/\b(next|done|continue|skip|pass|repeat|again|stop|pause)\b\.?/gi, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function spokenPunct(t) { return (t || '').replace(/\s*\b(comma|semicolon)\b\s*/gi, ', ').replace(/\s*\bperiod\b\s*$/i, ''); }
+  function isBlankWord(t) { return BLANK_WORDS.indexOf((t || '').toLowerCase().replace(/[.,!?]/g, '').trim()) >= 0; }
+  function boxVal() { return document.getElementById('answerBox').value.trim(); }
+  function setBox(t) { document.getElementById('answerBox').value = t || ''; }
+  function clearBox() {
+    setBox(''); accumulated = '';
+    document.getElementById('vsHeardText').textContent = '';
+    document.getElementById('vsHeard').style.display = 'none';
+  }
+
+  function startVoice() {
+    if (!SR) { speak('This browser cannot use the microphone. Open the page in Safari from your bookmark, not Files.'); return; }
+    voiceActive = true; fieldIdx = 0; accumulated = ''; gotSpeech = false; speaking = false; advancing = false;
+    buildFieldList();
+    document.getElementById('fieldLog').innerHTML = '';
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('stopBtn').style.display = 'block';
+    document.getElementById('voiceStatus').classList.add('show');
+    if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request('screen').catch(function(){});
+    setupRecognition();
+    // Start mic NOW from this tap so iPad Safari allows listening after the prompts.
+    try { recognition.start(); recognizing = true; } catch (e) {}
+    speak('Homebound statement. Answer, then pause. I will go on by myself.', function() { nextField(); });
+  }
+
+  function setupRecognition() {
+    if (recognition) { try { recognition.abort(); } catch(e) {} }
+    recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+    if (useLocal && 'processLocally' in recognition) recognition.processLocally = true; // on-device when supported
+
+    recognition.onresult = function(event) {
+      if (speaking || advancing || !voiceActive) return;
+      var interim = '', finalT = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var t = event.results[i][0].transcript || '';
+        if (event.results[i].isFinal) finalT += t; else interim += t;
+      }
+      if (finalT) accumulated += (accumulated ? ' ' : '') + finalT.trim();
+      var display = (accumulated + ' ' + interim).trim();
+      if (display) {
+        gotSpeech = true;
+        if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
+        document.getElementById('micWarn').style.display = 'none';
+        document.getElementById('vsHeard').style.display = 'block';
+        document.getElementById('vsHeardText').textContent = display;
+        setBox(stripCmd(display) || display);
+      }
+    };
+    recognition.onend = function() {
+      recognizing = false;
+      document.getElementById('vsListening').classList.remove('show');
+      if (!voiceActive || speaking || advancing) return;
+      finishUtterance();
+    };
+    recognition.onerror = function(event) {
+      recognizing = false;
+      if (event.error === 'not-allowed') {
+        speak('Microphone is blocked. In Safari, tap the A A in the address bar, allow microphone, then tap Start again.');
+        stopVoice(); return;
+      }
+      if ((event.error === 'language-not-supported' || event.error === 'service-not-allowed') && useLocal && 'processLocally' in recognition) {
+        // On-device pack not available: fall back to the browser's normal recognizer (same as SOC Journal) and say so.
+        useLocal = false;
+        document.getElementById('voiceCue').innerHTML += '<br><b>Note:</b> on-device speech isn\'t available in this browser, so speech may be processed by the browser\'s speech service (Apple/Google). Nothing is saved by this page.';
+        setupRecognition();
+        setTimeout(function(){ if (voiceActive && !speaking && !advancing) listen(false); }, 300);
+        return;
+      }
+      if (!voiceActive || speaking || advancing) return;
+      if (event.error === 'no-speech') {
+        if (boxVal() || accumulated) scheduleCommit();
+        else setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 300);
+      }
+    };
+  }
+
+  function scheduleCommit() {
+    if (pendingCommit) clearTimeout(pendingCommit);
+    pendingCommit = setTimeout(function() {
+      pendingCommit = null;
+      if (!voiceActive || speaking || advancing) return;
+      var answer = stripCmd(boxVal() || accumulated);
+      if (!answer) { listen(false); return; }
+      advancing = true; accumulated = '';
+      try { if (recognition) recognition.abort(); } catch(e) {}
+      processAnswer(answer);
+    }, PAUSE_MS);
+  }
+
+  function finishUtterance() {
+    if (!voiceActive || speaking || advancing) return;
+    var raw = (boxVal() || accumulated || '').trim();
+    var lower = raw.toLowerCase();
+    if (hasCmd(lower, ['skip', 'pass']) || isBlankWord(raw)) {
+      if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
+      tapSkip(); return;
+    }
+    if (hasCmd(lower, ['repeat', 'again'])) {
+      if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
+      accumulated = ''; speakCurrentPrompt(); return;
+    }
+    if (hasCmd(lower, ['stop', 'pause'])) {
+      if (pendingCommit) { clearTimeout(pendingCommit); pendingCommit = null; }
+      stopVoice(); return;
+    }
+    if (stripCmd(raw)) { listen(false); scheduleCommit(); }
+    else setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 280);
+  }
+
+  function tapNext() {
+    if (!voiceActive || advancing) return;
+    advancing = true;
+    var answer = stripCmd(boxVal() || accumulated);
+    accumulated = '';
+    try { if (recognition) recognition.stop(); } catch(e) {}
+    processAnswer(answer);
+  }
+  function tapSkip() {
+    if (!voiceActive) return;
+    advancing = true; accumulated = '';
+    try { if (recognition) recognition.stop(); } catch(e) {}
+    var f = fields[fieldIdx];
+    if (f && !f.isPron) { document.getElementById(f.id).value = ''; updateOutput(); }
+    addLog(f ? f.label : 'skipped', '(skipped)');
+    fieldIdx++;
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
+  }
+
+  function listen(resetHeard) {
+    if (!voiceActive || !recognition || speaking || advancing || recognizing) return;
+    if (resetHeard) clearBox();
+    listenStartedAt = Date.now();
+    document.getElementById('vsListening').classList.add('show');
+    try { recognition.start(); recognizing = true; }
+    catch(e) { recognizing = false; setTimeout(function() { if (voiceActive && !speaking && !advancing) listen(false); }, 400); }
+    setTimeout(function(){
+      if (voiceActive && !gotSpeech && Date.now() - listenStartedAt > 5000) document.getElementById('micWarn').style.display = 'block';
+    }, 6000);
+  }
+
+  function speak(text, after) {
+    speaking = true;
+    try { if (recognition) recognition.abort(); } catch(e) {}
+    var finished = false;
+    function done() {
+      if (finished) return;
+      finished = true; speaking = false;
+      setTimeout(function() { if (after) after(); }, 550);
+    }
+    if (synth && window.SpeechSynthesisUtterance) {
+      synth.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0; u.onend = done; u.onerror = done;
+      synth.speak(u);
+      setTimeout(done, Math.max(3500, (text.length * 90) + 1200));
+    } else done();
+  }
+  function chime() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      var ctx = new AC();
+      [880, 1320].forEach(function(fq, i) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = fq; o.connect(g); g.connect(ctx.destination);
+        var t = ctx.currentTime + i * 0.18;
+        g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        o.start(t); o.stop(t + 0.32);
+      });
+    } catch(e) {}
+  }
+
+  function speakCurrentPrompt() {
+    if (fieldIdx < fields.length) {
+      var f = fields[fieldIdx];
+      document.getElementById('vsCurrent').textContent = f.label;
+      speak(f.label, function() { listen(true); });
+    }
+  }
+  function nextField() {
+    if (!voiceActive) return;
+    if (fieldIdx >= fields.length) { finishVoice(); return; }
+    var f = fields[fieldIdx];
+    document.getElementById('progressFill').style.width = Math.round((fieldIdx / fields.length) * 100) + '%';
+    document.getElementById('vsCurrent').textContent = (fieldIdx + 1) + ' of ' + fields.length + ' — ' + f.label;
+    clearBox();
+    speak(f.label, function() { listen(true); });
+  }
+
+  function processAnswer(answer) {
+    advancing = true;
+    var f = fields[fieldIdx];
+    if (!f) { advancing = false; finishVoice(); return; }
+    answer = spokenPunct(answer);
+    if (!answer || isBlankWord(answer)) {
+      if (!f.isPron) document.getElementById(f.id).value = '';
+      addLog(f.label, '(blank)');
+    } else if (f.isPron) {
+      var l = answer.toLowerCase(), p = null;
+      if (/\bthey\b|\bthem\b/.test(l)) p = 'they';
+      else if (/\bshe\b|\bher\b|female|woman/.test(l)) p = 'she';
+      else if (/\bhe\b|\bhim\b|\bmale\b|\bman\b/.test(l)) p = 'he';
+      else if (/patient/.test(l)) p = 'patient';
+      if (p) setPron(document.querySelector('.pron [data-p="' + p + '"]'));
+      addLog('Pronoun', p || ('kept ' + pron));
+    } else {
+      document.getElementById(f.id).value = answer;
+      updateOutput();
+      addLog(f.label, answer);
+    }
+    fieldIdx++;
+    setTimeout(function(){ advancing = false; nextField(); }, 200);
+  }
+
+  function finishVoice() {
+    voiceActive = false; recognizing = false;
+    try { if (recognition) recognition.abort(); } catch(e) {}
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('vsCurrent').textContent = 'Done! Statement is ready below.';
+    document.getElementById('vsListening').classList.remove('show');
+    document.getElementById('vsHeard').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('startBtn').textContent = '▶ Start Voice Again';
+    document.getElementById('stopBtn').style.display = 'none';
+    updateOutput();
+    chime();
+    var text = document.getElementById('output').value;
+    speak('Homebound statement complete. ' + text + ' When you arrive, review it, add today\'s details, and copy it into the chart.');
+    try { document.getElementById('output').scrollIntoView({ behavior: 'smooth' }); } catch(e) {}
+  }
+  function stopVoice() {
+    voiceActive = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    if (synth) synth.cancel();
+    recognizing = false;
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('stopBtn').style.display = 'none';
+    document.getElementById('vsListening').classList.remove('show');
+    updateOutput();
+  }
+  function addLog(label, value) {
+    var log = document.getElementById('fieldLog');
+    var item = document.createElement('div');
+    item.className = 'fl-item';
+    var b = document.createElement('span'); b.className = 'fl-label'; b.textContent = label + ': ';
+    item.appendChild(b); item.appendChild(document.createTextNode(value || '(blank)'));
+    log.insertBefore(item, log.firstChild);
+  }
+
+  function clearAll() {
+    document.querySelectorAll('.row input').forEach(function(i){ i.value = ''; });
+    document.getElementById('output').value = '';
+    document.querySelectorAll('.checklist input').forEach(function(c){ c.checked = false; });
+    edited = false;
+  }
+
+  function selectOutput() {
+    var output = document.getElementById('output');
+    output.focus(); output.select();
+    try { output.setSelectionRange(0, output.value.length); } catch(e) {}
+  }
+  function copyOutput() {
+    var output = document.getElementById('output');
+    if (!output.value) updateOutput();
+    var text = output.value;
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(function(){ fallbackCopy(text); });
+    } else fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.style.top = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { ta.setSelectionRange(0, ta.value.length); } catch(e) {}
+    try { document.execCommand('copy'); showCopied(); }
+    catch (e) { selectOutput(); alert('Copy button did not work. The text is now selected — long-press and choose Copy.'); }
+    document.body.removeChild(ta);
+  }
+  function showCopied() {
+    var btn = document.getElementById('copyBtn'), t = document.getElementById('copyText');
+    btn.classList.add('copied'); t.textContent = 'Copied!';
+    setTimeout(function(){ btn.classList.remove('copied'); t.textContent = 'Copy Statement'; }, 2000);
+  }
+</script>
+</body>
+</html>
