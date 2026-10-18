@@ -293,7 +293,7 @@
 <div class="container">
   <div class="header">
     <h1>Homebound Statement Builder — Voice</h1>
-    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting <span id="ver" style="background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px;margin-left:4px;">v4 • Oct 17</span></div>
+    <div class="subtitle">Tap Start once — it asks each prompt out loud and listens. Or tap/type below, copy your statement, paste into your chart. @bettercharting <span id="ver" style="background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px;margin-left:4px;">v5 • Oct 17</span></div>
   </div>
   <div class="body">
 
@@ -317,7 +317,7 @@
 
     <div class="voice-wrap">
       <div id="noSpeech" class="no-speech">This browser can't do hands-free voice. Use Safari on iPad/iPhone (opened from your bookmark, not Files) or Chrome. You can still tap and type below, or use the 🎤 on your keyboard.</div>
-      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads the start of each sentence aloud — finish the sentence, then pause about 3 seconds and it goes on by itself. (Check the header says <b>v4</b>; if not, refresh the page.) Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
+      <div class="cue" id="voiceCue"><b>Driving mode:</b> pick Template A or B, tap Start once, then talk. It reads the start of each sentence aloud — finish the sentence, then pause about 3 seconds and it goes on by itself. (Check the header says <b>v5</b>; if not, refresh the page.) Say <b>“skip”</b> or <b>“none”</b> to leave one blank, <b>“repeat”</b> to hear it again, <b>“stop”</b> to end. Dictate while parked, not while driving.</div>
       <button type="button" class="big-btn green" id="startBtn" onclick="startVoice()">▶ Start Voice</button>
       <button type="button" class="big-btn red" id="stopBtn" onclick="stopVoice()" style="display:none;">Stop Voice</button>
       <div class="voice-status" id="voiceStatus">
@@ -499,9 +499,25 @@
     [/\b(mersa|mursa|mrs a)\b/gi, 'MRSA'], [/\bc\.?\s?diff?\b/gi, 'C. diff'],
     [/\bnew\s?mania\b/gi, 'pneumonia'], [/\bi\.\s?v\.?(?=\s|$)/gi, 'IV'],
     [/\bpeg\s+tube\b/gi, 'PEG tube'], [/\bwound\s+vac\b/gi, 'wound VAC'],
+    [/\btinnitus\s+(?:dear|deer|dier|tear)\b/gi, 'tinnitus in left ear'],
+    [/\b(?:lift|laughed|lefty)\s+ear\b/gi, 'left ear'], [/\bin\s+(?:the\s+)?(left|right)\s+here\b/gi, 'in $1 ear'],
+    [/\b(?:forget|forgot)\s*(?:best|fullness|fulness|full\s+ness|fullest)\b/gi, 'forgetfulness'],
+    [/\bdizzy\s+ness\b/gi, 'dizziness'], [/\bneuro\s+pathy\b/gi, 'neuropathy'],
+    [/\bin\s+continent\b/gi, 'incontinent'], [/\bin\s+continence\b/gi, 'incontinence'],
+    [/\bde\s+conditioning\b/gi, 'deconditioning'], [/\bshort\s+ness\s+of\s+breath\b/gi, 'shortness of breath'],
     [/\bsob\b/g, 'SOB'], [/\bo two\b/gi, 'O2']
   ];
   function fixVocab(s) { VOCAB.forEach(function(r){ s = s.replace(r[0], r[1]); }); return s; }
+  // iPad dictation Title-Cases random words mid-sentence: lowercase them, keep acronyms and proper terms
+  var PROPER = /^(Parkinson's|Parkinson|Parkinsons|Alzheimer's|Alzheimer|Alzheimers|Crohn's|Crohn|Hodgkin's|Hodgkin|Huntington's|Bell's|Guillain|Barre|Medicare|Medicaid|Foley|Lyme|Down|Cushing's|Addison's|Raynaud's|Dr|Mr|Mrs|Ms|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|June|July|August|September|October|November|December|English|Spanish|C)$/;
+  function midLower(s) {
+    var first = true;
+    return s.replace(/[A-Za-z][A-Za-z'\-]*/g, function(w, off) {
+      var keep = first || /^[A-Z0-9'\-]{2,}$/.test(w) || /[A-Z].*[A-Z]/.test(w.slice(1)) || PROPER.test(w) || /\.\s*$/.test(s.slice(0, off));
+      first = false;
+      return keep ? w : (/^[A-Z][a-z'\-]+$/.test(w) ? w.toLowerCase() : w);
+    });
+  }
   // Sentence-case after any internal period (multi-sentence dictation)
   function sentenceFix(s) { return s.replace(/([.!?])\s+([a-z])/g, function(m, p, c){ return p + ' ' + c.toUpperCase(); }); }
   var SKILL_KEYS = /\s+(?=(PICC line|labs?\b|lab draws?|blood draws?|wound care|dressing changes?|cardiopulmonary|injections?|catheter care|ostomy care|venipuncture)\b)/gi;
@@ -521,6 +537,7 @@
     s = s.replace(/\.{2,}/g, '.');
     s = fixVocab(s);
     s = fixAcronyms(s);
+    s = midLower(s);
     if (!keepCase && s && !/^[A-Z0-9]{2,}/.test(s.split(' ')[0])) s = s.charAt(0).toLowerCase() + s.slice(1);
     return s;
   }
