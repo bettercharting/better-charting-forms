@@ -484,12 +484,42 @@
   function fixAcronyms(s) {
     return s.replace(/[A-Za-z][A-Za-z0-9\/\-]*/g, function(w){ return ACRO_MAP[w.toLowerCase()] || w; });
   }
+  // Conservative, whole-word fixes for common speech-to-text mishears of charting terms
+  var VOCAB = [
+    [/\b(pick|pic|pik|pec)\s+lines?\b/gi, 'PICC line'],
+    [/\bp\.?\s?i\.?\s?c\.?\s?c\.?\s+line\b/gi, 'PICC line'],
+    [/\b(unsteady|unstable|shuffling|impaired|abnormal|antalgic|slow|steady|poor|wide-based)\s+gate\b/gi, '$1 gait'],
+    [/\bgate\s+(belt|training|instability|disturbance)\b/gi, 'gait $1'],
+    [/\b(weakness|fatigue|pain|dizziness|cough|wheezing|edema)\s+in\s+(dyspnea|shortness of breath)\b/gi, '$1 and $2'],
+    [/\b(ambulate|walking|exertion)\s+in\s+(dyspnea|shortness of breath)\b/gi, '$1 and $2'],
+    [/\bas evidence by\b/gi, 'as evidenced by'], [/^evidence by\b/i, 'evidenced by'],
+    [/\b(osteomyelitis|osteo)\s+of\s+the\s+school\b/gi, '$1 of the skull'],
+    [/\bhospitali[sz]a?t?\b(?!ion)/gi, 'hospitalization'],
+    [/\bimmuno[\s-]+compromised\b/gi, 'immunocompromised'],
+    [/\b(mersa|mursa|mrs a)\b/gi, 'MRSA'], [/\bc\.?\s?diff?\b/gi, 'C. diff'],
+    [/\bnew\s?mania\b/gi, 'pneumonia'], [/\bi\.\s?v\.?(?=\s|$)/gi, 'IV'],
+    [/\bpeg\s+tube\b/gi, 'PEG tube'], [/\bwound\s+vac\b/gi, 'wound VAC'],
+    [/\bsob\b/g, 'SOB'], [/\bo two\b/gi, 'O2']
+  ];
+  function fixVocab(s) { VOCAB.forEach(function(r){ s = s.replace(r[0], r[1]); }); return s; }
+  // Sentence-case after any internal period (multi-sentence dictation)
+  function sentenceFix(s) { return s.replace(/([.!?])\s+([a-z])/g, function(m, p, c){ return p + ' ' + c.toUpperCase(); }); }
+  var SKILL_KEYS = /\s+(?=(PICC line|labs?\b|lab draws?|blood draws?|wound care|dressing changes?|cardiopulmonary|injections?|catheter care|ostomy care|venipuncture)\b)/gi;
+  function splitSkills(raw) {
+    var s = fixAcronyms(fixVocab((raw || '').trim()));
+    if (/[,;]/.test(s)) return s;
+    s = s.replace(/\s+and\s+/gi, ', ');
+    return s.replace(SKILL_KEYS, function(m, k, off){ return off === 0 ? m : ', '; }).replace(/,\s*,/g, ',');
+  }
+  var VERB_START = /^(is|are|has|have|needs?|requires?|becomes|gets|feels|sleeps|rests|takes|must|can|cannot|can't|will|reports|stays|lies|lays|goes|spends|experiences|develops|remains|was|were|does|did)\b/i;
+
   // Clean one dictated fragment: trim, collapse spaces, drop end punctuation, fix acronyms, lowercase first letter (mid-sentence)
   function clean(s, keepCase) {
     s = (s || '').replace(/\s+/g, ' ').trim();
     s = s.replace(/^[,;.\s]+|[,;.!?\s]+$/g, '');
     s = s.replace(/\s+([,;])/g, '$1').replace(/([,;])(?=\S)/g, '$1 ');
     s = s.replace(/\.{2,}/g, '.');
+    s = fixVocab(s);
     s = fixAcronyms(s);
     if (!keepCase && s && !/^[A-Z0-9]{2,}/.test(s.split(' ')[0])) s = s.charAt(0).toLowerCase() + s.slice(1);
     return s;
@@ -531,37 +561,49 @@
     var other = clean(val('f-other'));
     var taxing = stripLead(clean(val('f-taxing')), /^(as evidenced by|evidenced by)\s+/i);
     var after = clean(val('f-after'));
-    var skilled = stripLead(joinList(val('f-skilled')), /^(skilled nursing for|for)\s+/i);
+    var skilled = stripLead(joinList(splitSkills(val('f-skilled'))), /^(skilled nursing for|for)\s+/i);
     var disc = val('f-discipline') || 'nursing';
 
     if (!(dx||effect||assist||contra||fall||infect||other||taxing||after||skilled)) return '';
 
     var S = subj(), out = [];
+    var BE = pron === 'they' ? 'are' : 'is';
     if (dx) dx = cap(dx);
-    out.push('Patient has ' + (dx || '[CONDITION]') + (effect ? ' resulting in ' + effect : '') + '.');
+    effect = effect.replace(/\.\s*$/, '');
+    out.push('Patient has ' + (dx || '[CONDITION]') + (effect ? ' resulting in ' + effect : ''));
     if (currentTemplate === 'a') {
-      out.push('Because of this condition, the patient requires ' + (assist || '[ASSISTANCE/DEVICE/TRANSPORT]') + ' to leave the home.');
+      out.push('Because of this condition, the patient requires ' + (assist || '[ASSISTANCE/DEVICE/TRANSPORT]') + ' to leave the home');
     } else {
-      out.push('Leaving home is medically contraindicated because ' + (contra || '[MEDICAL RISK]') + '.');
+      out.push('Leaving home is medically contraindicated because ' + (contra || '[MEDICAL RISK]'));
     }
     var firstRisk = true;
-    if (fall) { out.push('The patient is at high fall risk due to ' + fall + '.'); firstRisk = false; }
+    if (fall) { out.push('The patient is at high fall risk due to ' + fall); firstRisk = false; }
     if (infect) {
-      out.push(firstRisk ? 'The patient is at high infection risk due to ' + infect + '.'
-                         : S + ' ' + (pron==='they'?'are':'is') + ' also at high infection risk due to ' + infect + '.');
+      out.push(firstRisk ? 'The patient is at high infection risk due to ' + infect
+                         : S + ' ' + BE + ' also at high infection risk due to ' + infect);
       firstRisk = false;
     }
     if (other) {
-      other = other.replace(/^(is|are)\s+(also\s+)?(at\s+)?/i, '');
-      if (!/^(at|in)\s/i.test(other)) other = 'at ' + other;
-      out.push(S + ' ' + (pron==='they'?'are':'is') + (firstRisk ? ' ' : ' also ') + other + '.');
+      var also = firstRisk ? '' : ' also';
+      var o = other.replace(/^(the patient|patient|she|he|they)\s+/i, '').replace(/^also\s+/i, '');
+      if (/\brisk\b/i.test(o)) {                       // "high risk for X due to Y"
+        o = o.replace(/^(is|are)\s+(also\s+)?/i, '').replace(/^at\s+/i, '');
+        out.push(S + ' ' + BE + also + ' at ' + o);
+      } else if (VERB_START.test(o)) {                 // "requires prompting...", "has confusion..."
+        out.push(S + also + ' ' + conj(o));
+      } else {                                         // noun phrase: "confusion at certain times..."
+        out.push(S + ' also ' + (pron === 'they' ? 'have ' : 'has ') + o);
+      }
     }
-    out.push('The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING EFFORT]') + '.');
+    out.push('The patient is normally unable to leave home safely and independently, and leaving home requires considerable and taxing effort, as evidenced by ' + (taxing || '[TAXING EFFORT]'));
     if (after) {
-      after = after.replace(/\s+(when|after)\s+(returning|they return|she returns|he returns)\s+home$/i, '');
-      out.push(S + ' ' + conj(after) + ' when returning home.');
+      var a = after.replace(/^(the patient|patient|she|he|they)\s+/i, '');
+      var hasReturn = /\b(return|returning|gets? home|got home|after)\b/i.test(a);
+      if (VERB_START.test(a)) out.push(S + ' ' + conj(a) + (hasReturn ? '' : ' when returning home'));
+      else out.push(S + ' ' + (pron === 'they' ? 'require ' : 'requires ') + a + (hasReturn ? '' : ' when returning home'));
     }
-    out.push('The patient requires skilled ' + disc + ' for ' + (skilled || '[SKILLED NEED]') + '.');
+    out.push('The patient requires skilled ' + disc + ' for ' + (skilled || '[SKILLED NEED]'));
+    out = out.map(function(x){ x = sentenceFix(x.trim().replace(/[\s,;.]+$/, '')); return x.charAt(0).toUpperCase() + x.slice(1) + '.'; });
     return out.join(' ').replace(/\.\./g, '.').replace(/\s{2,}/g, ' ');
   }
 
@@ -611,8 +653,8 @@
 
   // ---------- Hands-free voice (same flow as SOC Journal Voice) ----------
   var fields = [], fieldIdx = 0, voiceActive = false, recognizing = false, speaking = false, advancing = false;
-  var accumulated = '', gotSpeech = false, listenStartedAt = 0, pendingCommit = null;
-  var PAUSE_MS = 3000;
+  var lastInterim = '', accumulated = '', gotSpeech = false, listenStartedAt = 0, pendingCommit = null;
+  var PAUSE_MS = 3500;
   var synth = window.speechSynthesis;
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var recognition = null, useLocal = true;
@@ -627,7 +669,7 @@
     else f.push({ id: 'f-contra', label: 'Why is leaving home medically contraindicated?' });
     f.push({ id: 'f-fall', label: 'Fall risk due to what? Or say none.', optional: true });
     f.push({ id: 'f-infect', label: 'Infection risk due to what? Or say none.', optional: true });
-    f.push({ id: 'f-other', label: 'Any other risk? Or say none.', optional: true });
+    f.push({ id: 'f-other', label: 'Any other safety concern? Or say none.', optional: true });
     f.push({ id: 'f-taxing', label: 'What shows leaving home is taxing?' });
     f.push({ id: 'f-after', label: 'What happens when the patient gets home? Or say none.', optional: true });
     f.push({ id: 'f-skilled', label: 'Skilled need. Say comma between items.' });
@@ -647,10 +689,11 @@
   }
   function spokenPunct(t) { return (t || '').replace(/\s*\b(comma|semicolon)\b\s*/gi, ', ').replace(/\s*\bperiod\b\s*$/i, ''); }
   function isBlankWord(t) { return BLANK_WORDS.indexOf((t || '').toLowerCase().replace(/[.,!?]/g, '').trim()) >= 0; }
+  function bestAnswer() { var b = boxVal(), a = (accumulated + (lastInterim ? ' ' + lastInterim : '')).trim(); return (a.length > b.length && a.indexOf(b) === 0) ? a : (b || a); }
   function boxVal() { return document.getElementById('answerBox').value.trim(); }
   function setBox(t) { document.getElementById('answerBox').value = t || ''; }
   function clearBox() {
-    setBox(''); accumulated = '';
+    setBox(''); accumulated = ''; lastInterim = '';
     document.getElementById('vsHeardText').textContent = '';
     document.getElementById('vsHeard').style.display = 'none';
   }
@@ -687,6 +730,7 @@
         if (event.results[i].isFinal) finalT += t; else interim += t;
       }
       if (finalT) accumulated += (accumulated ? ' ' : '') + finalT.trim();
+      lastInterim = interim.trim();
       var display = (accumulated + ' ' + interim).trim();
       if (display) {
         gotSpeech = true;
@@ -699,6 +743,7 @@
     };
     recognition.onend = function() {
       recognizing = false;
+      if (lastInterim) { accumulated += (accumulated ? ' ' : '') + lastInterim; lastInterim = ''; }
       document.getElementById('vsListening').classList.remove('show');
       if (!voiceActive || speaking || advancing) return;
       finishUtterance();
@@ -730,7 +775,7 @@
     pendingCommit = setTimeout(function() {
       pendingCommit = null;
       if (!voiceActive || speaking || advancing) return;
-      var answer = stripCmd(boxVal() || accumulated);
+      var answer = stripCmd(bestAnswer());
       if (!answer) { listen(false); return; }
       advancing = true; accumulated = '';
       try { if (recognition) recognition.abort(); } catch(e) {}
@@ -761,7 +806,7 @@
   function tapNext() {
     if (!voiceActive || advancing) return;
     advancing = true;
-    var answer = stripCmd(boxVal() || accumulated);
+    var answer = stripCmd(bestAnswer());
     accumulated = '';
     try { if (recognition) recognition.stop(); } catch(e) {}
     processAnswer(answer);
