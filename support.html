@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support – Better Charting</title>
+<meta name="description" content="Help and answers for Better Charting, the homebound statement builder for home health nurses.">
+<style>
+  :root { --navy: #13294B; --ink: #1f2933; --muted: #5b6673; --line: #e3e7ec; --soft: #f4f6f9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); line-height: 1.6; background: #fff; font-size: 17px; }
+  header { background: var(--navy); color: #fff; padding: 28px 20px; }
+  header .wrap { max-width: 760px; margin: 0 auto; }
+  header a.brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.15rem; }
+  header h1 { margin: 10px 0 4px; font-size: 1.8rem; line-height: 1.25; }
+  header p { margin: 0; opacity: .85; }
+  nav { margin-top: 14px; font-size: .95rem; }
+  nav a { color: #fff; opacity: .9; margin-right: 16px; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 20px 48px; }
+  h2 { color: var(--navy); font-size: 1.3rem; margin: 32px 0 10px; }
+  .card { background: var(--soft); border-left: 4px solid var(--navy); padding: 14px 18px; border-radius: 6px; }
+  details { border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; background: #fff; }
+  summary { cursor: pointer; padding: 14px 16px; font-weight: 600; color: var(--navy); list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 1.2em; font-weight: 700; }
+  details[open] summary::before { content: "–"; }
+  details .a { padding: 0 16px 14px 34px; }
+  details .a p { margin: 6px 0; }
+  ul, ol { padding-left: 1.2em; } li { margin: 4px 0; }
+  code { background: var(--soft); padding: 1px 6px; border-radius: 4px; }
+  a { color: var(--navy); }
+  footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; padding: 20px; text-align: center; }
+  @media (max-width: 480px) { header h1 { font-size: 1.5rem; } body { font-size: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="./">Better Charting</a>
+    <h1>Support</h1>
+    <p>Help for nurses using Better Charting on iPhone, iPad, and Mac.</p>
+    <nav><a href="./">Home</a><a href="privacy.html">Privacy</a></nav>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <strong>Need help?</strong> Email <a href="mailto:betterchartinghh@gmail.com">betterchartinghh@gmail.com</a>.
+    I’m a home health nurse who built this app, and I read every message. Please don’t include any patient information in your email.
+  </div>
+
+  <h2>Quick start</h2>
+  <ol>
+    <li>Pick <strong>Template A</strong> (patient needs help, equipment, or transport to leave home) or <strong>Template B</strong> (leaving home is medically contraindicated).</li>
+    <li>Pick a pronoun.</li>
+    <li>Tap <strong>Start</strong>. The app reads 10 short prompts aloud, like “Patient has…” or “To leave the home, the patient requires…”. Finish each sentence out loud.</li>
+    <li>Read the finished statement and go through the 5-point <strong>Before you sign</strong> check.</li>
+    <li>Tap <strong>Copy</strong>, then paste it into your EMR.</li>
+  </ol>
+  <p>Voice commands: say <code>skip</code> or <code>none</code> to move past a prompt, <code>repeat</code> to hear it again, and <code>stop</code> to end. You can also type any answer.</p>
+  <p><strong>Safety:</strong> use only findings you assessed, and dictate while parked, never while driving.</p>
+
+  <h2>Frequently asked questions</h2>
+
+  <details>
+    <summary>How does voice work?</summary>
+    <div class="a">
+      <p>The app reads a prompt aloud, then listens while you finish the sentence. Your speech is turned into text right on your device by Apple’s on-device speech recognition. The app then puts your answers together into a homebound statement and cleans up common medical terms.</p>
+      <p>Your voice is not sent to me or to any server. If your device can’t do on-device recognition, the app turns voice off rather than send your speech anywhere.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why does it ask for Microphone and Speech Recognition permission?</summary>
+    <div class="a">
+      <p><strong>Microphone</strong> lets the app hear you. <strong>Speech Recognition</strong> lets your device turn what you say into text. Apple requires apps to ask for both before using voice.</p>
+      <p>Both are optional. If you say no, you can still type every answer.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Voice won’t start. What can I do?</summary>
+    <div class="a">
+      <ul>
+        <li><strong>Check permissions.</strong> On iPhone or iPad, go to Settings › Privacy &amp; Security › Microphone and › Speech Recognition, and turn on Better Charting. On Mac, use System Settings › Privacy &amp; Security.</li>
+        <li><strong>Give it a minute the first time.</strong> Your device may need to download Apple’s speech model. Connect to Wi-Fi and try again. This download comes from Apple and contains none of your data.</li>
+        <li><strong>Check your language.</strong> On-device recognition is only available for some languages and regions. Try setting your device language to English (US).</li>
+        <li><strong>Close other apps using the mic</strong>, like a phone call, FaceTime, or another dictation app.</li>
+        <li><strong>Restart the app</strong>, and if needed, restart your device.</li>
+        <li>Still stuck? You can type your answers while you email me.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Does it save anything?</summary>
+    <div class="a">
+      <p>No. Nothing is saved. Closing the app or tapping <strong>Clear</strong> erases the statement. There are no accounts, no analytics, no tracking, and no ads.</p>
+      <p>One thing to know: when you tap Copy, the statement goes on your device’s clipboard until you copy something else. Follow your agency’s policy for copied patient information.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Does it work offline?</summary>
+    <div class="a">
+      <p>Yes. Once Apple’s on-device speech model is on your device, voice and typing both work without internet. That helps a lot in rural areas and dead zones. The first voice use may need a connection so the operating system can download the model.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Does it work on iPhone, iPad, and Mac?</summary>
+    <div class="a">
+      <p>Yes. Better Charting is a native app for iPhone, iPad, and Mac. Voice needs a device and OS version that support Apple’s on-device speech recognition. See the App Store listing for exact system requirements.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Is it HIPAA compliant?</summary>
+    <div class="a">
+      <p>Better Charting is not HIPAA certified. It is designed so no patient information leaves your device: nothing is sent to me or to any server, and nothing is saved. You are still responsible for following your agency’s policies on devices and patient information.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do I send feedback or report a problem?</summary>
+    <div class="a">
+      <p>Email <a href="mailto:betterchartinghh@gmail.com">betterchartinghh@gmail.com</a>. Helpful details: your device (iPhone, iPad, or Mac), OS version, app version, and what happened. If you’re in the TestFlight beta, you can also send feedback right from the TestFlight app, or take a screenshot in the app and share it as beta feedback.</p>
+      <p><strong>Please never include patient names or any patient information</strong> in emails or screenshots.</p>
+    </div>
+  </details>
+
+  <h2>Contact</h2>
+  <p>Email: <a href="mailto:betterchartinghh@gmail.com">betterchartinghh@gmail.com</a><br>
+     Store: <a href="https://bettercharting.gumroad.com">bettercharting.gumroad.com</a><br>
+     Website: <a href="https://bettercharting.github.io/better-charting-forms/">bettercharting.github.io/better-charting-forms</a></p>
+</main>
+
+<footer>
+  © 2026 Better Charting · <a href="./">Home</a> · <a href="privacy.html">Privacy</a>
+</footer>
+</body>
+</html>
